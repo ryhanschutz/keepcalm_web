@@ -1,0 +1,68 @@
+@import './tokens.css';
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--kc-font-ui);
+  font-size: var(--kc-font-size-ui);
+  line-height: var(--kc-line-height-ui);
+  color: var(--kc-text-primary);
+  background-color: var(--kc-bg-base);
+  user-select: none;
+  overflow: hidden; /* A janela principal não deve ter scroll, apenas a área de conteúdo */
+  height: 100vh;
+  width: 100vw;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--kc-font-serif);
+  font-weight: bold;
+}
+
+/* Scrollbar Style - Estilo clássico (como no Firefox antigo/Cinnamon) */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--kc-bg-sidebar);
+  border-left: 1px solid var(--kc-border-subtle);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--kc-bg-toolbar);
+  border: 1px solid var(--kc-border-main);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--kc-border-subtle);
+}
+
+/* Utility Classes */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-1 { flex: 1; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-1 { gap: 4px; }
+.gap-2 { gap: 8px; }
+
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

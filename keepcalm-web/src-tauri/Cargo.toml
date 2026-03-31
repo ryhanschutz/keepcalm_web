@@ -1,0 +1,37 @@
+[package]
+name = "keepcalm-web"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "keepcalm_web_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+hyper = { version = "1", features = ["full"] }
+hyper-util = { version = "0.1", features = ["full"] }
+http-body-util = "0.1"
+rustls = "0.23"
+arti-client = { version = "0.22", features = ["pt-client", "tokio", "static-sqlite"] }
+tor-rtcompat = { version = "0.22", features = ["tokio"] }
+async-trait = "0.1"
+aho-corasick = "1"
+sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio"] }
+url = "2"
+uuid = { version = "1", features = ["v4"] }
+

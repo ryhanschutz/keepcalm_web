@@ -1,0 +1,102 @@
+.status-bar {
+  height: 32px;
+  background: #161b22;
+  border-top: 1px solid #30363d;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-family: 'SF Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 11px;
+  color: #8b949e;
+  user-select: none;
+  z-index: 100;
+}
+
+.status-left, .status-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-label {
+  color: #6e7681;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-value {
+  color: #c9d1d9;
+  font-weight: 500;
+}
+
+.status-value.highlight {
+  color: #58a6ff;
+  font-weight: 600;
+}
+
+.status-divider {
+  width: 1px;
+  height: 12px;
+  background: #30363d;
+}
+
+.icon-success { color: #3fb950; }
+.icon-secure { color: #388bfd; }
+.icon-info { color: #58a6ff; }
+.icon-muted { color: #484f58; }
+
+.engine-button {
+  background: transparent;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  padding: 2px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  height: 20px;
+}
+
+.engine-button:hover {
+  background: #21262d;
+  border-color: #8b949e;
+}
+
+.engine-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #8b949e;
+  letter-spacing: 0.8px;
+}
+
+.engine-button:hover .engine-label {
+  color: #c9d1d9;
+}
+
+.engine-dot {
+  width: 6px;
+  height: 6px;
+  background: #484f58;
+  border-radius: 50%;
+  transition: all 0.3s;
+}
+
+.engine-dot.active {
+  background: #388bfd;
+  box-shadow: 0 0 8px rgba(56, 139, 253, 0.6);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1); }
+}

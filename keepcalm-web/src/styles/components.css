@@ -1,0 +1,185 @@
+@import './base.css';
+
+/* Window Chrome - Barra de título nativa customizada */
+.window-chrome {
+  height: 30px;
+  background: linear-gradient(180deg, #2A4D70 0%, #1A3A5C 100%);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  user-select: none;
+  font-family: var(--kc-font-ui);
+  font-size: var(--kc-font-size-small);
+  border-bottom: 1px solid var(--kc-border-subtle);
+}
+
+.window-chrome-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 60%;
+  font-weight: 400;
+  pointer-events: none;
+}
+
+.window-controls {
+  display: flex;
+  gap: 1px;
+}
+
+.window-control-btn {
+  width: 26px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  color: #FFFFFF;
+  cursor: default;
+  transition: background 150ms;
+}
+
+.window-control-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.window-control-btn.close:hover {
+  background: #C42B1C;
+}
+
+/* Tab Bar - Estilo clássico */
+.tab-bar {
+  height: 30px;
+  background-color: #D4CFC8;
+  border-top: 3px solid #EAE6E1;
+  display: flex;
+  padding-left: 4px;
+}
+
+.tab {
+  height: 27px;
+  background-color: #C8C3BB;
+  border: 1px solid var(--kc-border-main);
+  border-bottom: none;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  padding: 0 8px;
+  min-width: 80px;
+  max-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #444;
+  margin-top: 3px;
+  margin-right: 1px;
+  transition: background 150ms;
+  position: relative;
+}
+
+.tab:hover {
+  background-color: #D8D3CC;
+}
+
+.tab.active {
+  background-color: var(--kc-bg-active);
+  color: var(--kc-text-primary);
+  font-weight: bold;
+  height: 28px;
+  z-index: 10;
+  box-shadow: 0 -1px 2px rgba(0,0,0,0.05);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--kc-bg-active);
+}
+
+/* Toolbar - Barra de endereço e botões */
+.toolbar {
+  height: 34px;
+  background-color: #E8E3DC;
+  border-bottom: 1px solid var(--kc-border-main);
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  gap: 4px;
+}
+
+.toolbar-btn {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  transition: all 150ms;
+}
+
+.toolbar-btn:hover:not(:disabled) {
+  background-color: #C0BBB4;
+  border-color: #A09B94;
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.4;
+  color: #999;
+}
+
+.toolbar-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Address Bar */
+.address-bar {
+  flex: 1;
+  height: 26px;
+  background-color: #FAFAF8;
+  border: 1px solid #BBBBAA;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 8px;
+  font-family: var(--kc-font-mono);
+  font-size: 13px;
+}
+
+.address-bar:focus-within {
+  background-color: #FFFFFF;
+  border: 2px solid #2E5B8A;
+  padding: 0 7px; /* Compensate for thicker border */
+}
+
+.address-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  height: 100%;
+}
+
+/* Status Bar */
+.status-bar {
+  height: 22px;
+  background-color: #D8D3CC;
+  border-top: 1px solid #BBBBAA;
+  font-size: 11px;
+  color: #555;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  justify-content: space-between;
+}
