@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Globe, Lock, Terminal, X, CheckCircle, Wifi, Cpu } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import './NetworkSettings.css';
+import { isTauriRuntime } from '../utils/runtime';
 
 interface NetworkSettingsProps {
   isOpen: boolean;
@@ -35,6 +36,17 @@ export const NetworkSettings: React.FC<NetworkSettingsProps> = ({ isOpen, onClos
   }, [isOpen]);
 
   const updateStatus = async () => {
+    if (!isTauriRuntime()) {
+      setStatus({
+        profile: 'Preview',
+        bypass_active: false,
+        active_layer: 'Modo navegador',
+        connected: true,
+        latency_ms: 0,
+      });
+      return;
+    }
+
     try {
       const currentStatus = await invoke<NetworkStatus>('get_network_status');
       setStatus(currentStatus);
@@ -48,6 +60,11 @@ export const NetworkSettings: React.FC<NetworkSettingsProps> = ({ isOpen, onClos
   };
 
   const handleApply = async () => {
+    if (!isTauriRuntime()) {
+      onClose();
+      return;
+    }
+
     try {
       // TODO: Implementar invoke para salvar bypass_mode
       await invoke('run_network_probe');

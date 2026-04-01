@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
+import { isTauriRuntime } from '../utils/runtime';
 
 export interface Tab {
   id: string;
@@ -42,7 +43,9 @@ export const useTabStore = create<TabState>((set, get) => ({
     }));
 
     try {
-      await invoke('create_tab_webview', { id, url, partition });
+      if (isTauriRuntime()) {
+        await invoke('create_tab_webview', { id, url, partition });
+      }
     } catch (error) {
       console.error('Falha ao criar webview no Rust:', error);
     }
@@ -50,7 +53,9 @@ export const useTabStore = create<TabState>((set, get) => ({
 
   removeTab: async (id) => {
     try {
-      await invoke('close_webview', { id });
+      if (isTauriRuntime()) {
+        await invoke('close_webview', { id });
+      }
     } catch (error) {
       console.error('Falha ao fechar webview no Rust:', error);
     }
@@ -87,7 +92,11 @@ export const useTabStore = create<TabState>((set, get) => ({
     updateTab(activeTabId, { url, isLoading: true });
     
     try {
-      await invoke('update_webview_url', { id: activeTabId, url });
+      if (isTauriRuntime()) {
+        await invoke('update_webview_url', { id: activeTabId, url });
+      } else {
+        updateTab(activeTabId, { isLoading: false });
+      }
     } catch (error) {
       console.error('Falha ao navegar no Rust:', error);
       updateTab(activeTabId, { isLoading: false });

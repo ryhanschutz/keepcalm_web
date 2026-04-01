@@ -1,17 +1,11 @@
 use async_trait::async_trait;
 use crate::network::{NetworkLayer, Result, AsyncReadWrite};
 use url::Url;
-use arti_client::{TorClient, TorClientConfig, config::BridgeConfigBuilder, config::BoolOrAuto};
+use arti_client::{TorClient, TorClientConfig};
 use tor_rtcompat::PreferredRuntime;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use std::time::Duration;
-
-/// Bridges obfs4 built-in conforme especificação v1.1
-const BUILTIN_BRIDGES: &[&str] = &[
-    "obfs4 192.95.36.142:443 CDF2E8525FF36AF13D2F4FC6A6284CC495C54406 cert=B7raByA0Z1xSno7F9Xitv+0pGz3+t7Y88RlyoNAt/8A l89U4U5I0F70p1N2l3u3w iat-mode=0",
-    "obfs4 193.11.166.194:27015 2D82C2E354153018A12D270273752E109B5B2F94 cert=vYf7TTV89d4sP9xKj/S6w/M4jM/J7Q/S6w/M4jM/J7Q/S6w/M4jM/J7Q iat-mode=0",
-];
 
 pub struct TorLayer {
     client: Arc<Mutex<Option<TorClient<PreferredRuntime>>>>,
@@ -32,22 +26,17 @@ impl TorLayer {
             return Ok(client.clone());
         }
 
-        let mut config_builder = TorClientConfig::builder();
-
         if self.use_bridges {
-            config_builder.bridges().enabled(BoolOrAuto::Explicit(true));
-            for bridge_line in BUILTIN_BRIDGES {
-                let bridge_config: BridgeConfigBuilder = bridge_line.parse()?;
-                config_builder.bridges().bridges().push(bridge_config);
-            }
+            return Err("Modo bridge não está disponível nesta build local de testes".into());
         }
 
+        let config_builder = TorClientConfig::builder();
         let config = config_builder.build()?;
+
+        let client = TorClient::builder()
+            .config(config)
+            .create_unbootstrapped()?;
         
-        // Arti v0.22 flow: use TorClient::with_config
-        let client = TorClient::with_config(config).create_unbootstrapped()?;
-        
-        // Timeout de 15 segundos conforme especificação v1.1 para o bootstrap
         match tokio::time::timeout(Duration::from_secs(15), client.bootstrap()).await {
             Ok(bootstrap_res) => {
                 bootstrap_res?;

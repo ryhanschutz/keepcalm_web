@@ -1,47 +1,71 @@
-import React from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { useTabStore } from '../store/useTabStore';
+import { Minus, Square, X, Shield } from 'lucide-react';
+import { isTauriRuntime } from '../utils/runtime';
 
-const appWindow = getCurrentWindow();
-
-export const WindowChrome: React.FC = () => {
-  const activeTabId = useTabStore((state) => state.activeTabId);
-  const activeTab = useTabStore((state) => 
-    state.tabs.find((t) => t.id === activeTabId)
-  );
-
-  const handleMinimize = () => appWindow.minimize();
-  const handleMaximize = () => appWindow.toggleMaximize();
-  const handleClose = () => appWindow.close();
+const WindowChrome = () => {
+  const isTauri = isTauriRuntime();
+  const appWindow = isTauri ? getCurrentWindow() : null;
 
   return (
-    <div className="window-chrome" data-tauri-drag-region>
-      <div className="flex items-center gap-2" style={{ pointerEvents: 'none' }}>
-        <img src="/favicon.ico" alt="KC" width={16} height={16} />
-        <span style={{ fontWeight: 'bold' }}>KeepCalm Web</span>
-      </div>
-      
-      <div className="window-chrome-title truncate">
-        {activeTab?.title || 'KeepCalm Web Browser'}
+    <div
+      data-tauri-drag-region={isTauri ? 'true' : undefined}
+      style={{
+        height: '30px',
+        background: 'linear-gradient(to right, #2A4D70, #1A3A5C)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 8px',
+        color: 'white',
+        flexShrink: 0
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', pointerEvents: 'none', gap: '8px' }}>
+        <Shield size={16} />
+        <span style={{ fontSize: '12px', fontFamily: 'var(--kc-font-ui)' }}>KeepCalm Web</span>
       </div>
 
-      <div className="window-controls">
-        <button className="window-control-btn" onClick={handleMinimize}>
-          <svg width="10" height="1" viewBox="0 0 10 1" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="10" height="1" fill="currentColor"/>
-          </svg>
+      <div style={{ flex: 1, textAlign: 'center', fontSize: '13px', pointerEvents: 'none' }}>
+        {!isTauri ? 'Preview no navegador' : ''}
+      </div>
+
+      <div style={{ display: 'flex', height: '100%', alignItems: 'center', gap: '4px' }}>
+        <button
+          onClick={() => {
+            if (appWindow) {
+              void appWindow.minimize();
+            }
+          }}
+          disabled={!appWindow}
+          style={{ background: 'transparent', border: 'none', color: 'white', display: 'flex' }}
+        >
+          <Minus size={14} />
         </button>
-        <button className="window-control-btn" onClick={handleMaximize}>
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0.5" y="0.5" width="9" height="9" stroke="currentColor"/>
-          </svg>
+        <button
+          onClick={() => {
+            if (appWindow) {
+              void appWindow.maximize();
+            }
+          }}
+          disabled={!appWindow}
+          style={{ background: 'transparent', border: 'none', color: 'white', display: 'flex' }}
+        >
+          <Square size={12} />
         </button>
-        <button className="window-control-btn close" onClick={handleClose}>
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1.2"/>
-          </svg>
+        <button
+          onClick={() => {
+            if (appWindow) {
+              void appWindow.close();
+            }
+          }}
+          disabled={!appWindow}
+          style={{ background: 'transparent', border: 'none', color: 'white', display: 'flex' }}
+        >
+          <X size={14} />
         </button>
       </div>
     </div>
   );
 };
+
+export default WindowChrome;

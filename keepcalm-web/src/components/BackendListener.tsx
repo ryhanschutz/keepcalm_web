@@ -1,11 +1,16 @@
 import React, { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useTabStore } from '../store/useTabStore';
+import { isTauriRuntime } from '../utils/runtime';
 
 export const BackendListener: React.FC = () => {
   const { updateTab } = useTabStore();
 
   useEffect(() => {
+    if (!isTauriRuntime()) {
+      return;
+    }
+
     // Escutar mudança de URL (redirecionamentos, cliques em links)
     const unlistenUrl = listen<[string, string]>('webview-url-change', (event) => {
       const [id, url] = event.payload;

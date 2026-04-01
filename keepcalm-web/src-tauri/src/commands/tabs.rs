@@ -30,6 +30,9 @@ pub async fn create_tab_webview(
 
     let id_clone = id.clone();
     let app_handle = app.clone();
+    let title_event_app = app.clone();
+    let title_event_id = id.clone();
+    let load_event_app = app.clone();
 
     let mut webview_builder = WebviewBuilder::new(&id, webview_url)
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
@@ -53,33 +56,24 @@ pub async fn create_tab_webview(
             // Notificar o frontend sobre a mudança de URL
             app_handle.emit("webview-url-change", (id_clone.clone(), url.to_string())).ok();
             true
+        })
+        .on_document_title_changed(move |_webview, title| {
+            title_event_app
+                .emit("webview-title-change", (title_event_id.clone(), title))
+                .ok();
+        })
+        .on_page_load(move |_webview, payload| {
+            load_event_app
+                .emit("webview-load-finished", payload.url().to_string())
+                .ok();
         });
 
-    let id_clone_2 = id.clone();
-    let app_handle_2 = app.clone();
-
-    window.add_child(
+    let parent_window = window.as_ref().window();
+    parent_window.add_child(
         webview_builder,
         tauri::LogicalPosition::new(0.0, 0.0),
         tauri::LogicalSize::new(0.0, 0.0),
     ).map_err(|e| format!("Falha ao criar Webview: {}", e))?;
-
-    // Listener para quando a página terminar de carregar (para pegar o título)
-    if let Some(webview) = app.get_webview(&id) {
-        let webview_inner = webview.clone();
-        webview.on_page_load(move |payload| {
-            let app = app_handle_2.clone();
-            let id = id_clone_2.clone();
-            let webview = webview_inner.clone();
-            
-            tauri::async_runtime::spawn(async move {
-                if let Ok(title) = webview.title().await {
-                    app.emit("webview-title-change", (id, title)).ok();
-                }
-                app.emit("webview-load-finished", payload.url().to_string()).ok();
-            });
-        });
-    }
 
     Ok(())
 }

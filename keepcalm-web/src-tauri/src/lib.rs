@@ -25,7 +25,7 @@ pub fn run() {
             crate::commands::tabs::update_webview_url,
             crate::commands::tabs::close_webview,
         ])
-        .setup(|app| {
+        .setup(|_app| {
             // Iniciar a detecção em segundo plano
             tauri::async_runtime::spawn(async move {
                 loop {

@@ -1,7 +1,7 @@
 use tauri::State;
 use std::sync::Arc;
 use crate::network::detector::NetworkDetector;
-use crate::network::{NetworkStatus, Result};
+use crate::network::NetworkStatus;
 
 #[tauri::command]
 pub async fn get_network_status(detector: State<'_, Arc<NetworkDetector>>) -> std::result::Result<NetworkStatus, String> {

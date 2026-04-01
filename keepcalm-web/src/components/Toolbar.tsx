@@ -1,84 +1,86 @@
-import React, { useState, useEffect } from 'react';
-import { useTabStore } from '../store/useTabStore';
+import { ArrowLeft, ArrowRight, RotateCw, Home, Shield, Puzzle, Menu } from 'lucide-react';
+import { useState } from 'react';
 
-export const Toolbar: React.FC = () => {
-  const { tabs, activeTabId, updateTab } = useTabStore();
-  const activeTab = tabs.find((t) => t.id === activeTabId);
-  const [urlInput, setUrlInput] = useState(activeTab?.url || '');
-
-  useEffect(() => {
-    if (activeTab) {
-      setUrlInput(activeTab.url);
-    }
-  }, [activeTab?.url]);
-
-  const handleNavigate = (e: React.FormEvent) => {
-    e.preventDefault();
-    let targetUrl = urlInput.trim();
-    if (!targetUrl.includes('://') && !targetUrl.startsWith('about:')) {
-      targetUrl = `https://${targetUrl}`;
-    }
-    if (activeTabId) {
-      updateTab(activeTabId, { url: targetUrl });
-    }
-  };
+const Toolbar = () => {
+  const [url, setUrl] = useState('https://keepcalm.app/');
+  const [focused, setFocused] = useState(false);
 
   return (
-    <div className="toolbar">
-      <button className="toolbar-btn" disabled={!activeTab?.canGoBack}>
-        <svg viewBox="0 0 16 16" fill="currentColor">
-          <path d="M10 12.796V3.204L4.519 8 10 12.796zm-.659-8.914L5.433 8l3.908 4.118V3.882z"/>
-        </svg>
+    <div
+      style={{
+        height: '34px',
+        background: 'var(--kc-bg-toolbar)',
+        borderBottom: '1px solid var(--kc-border-main)',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 8px',
+        gap: '4px',
+        flexShrink: 0
+      }}
+    >
+      <button style={{ width: '28px', height: '28px', background: 'transparent', border: '1px solid transparent', borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <ArrowLeft size={16} />
       </button>
-      <button className="toolbar-btn" disabled={!activeTab?.canGoForward}>
-        <svg viewBox="0 0 16 16" fill="currentColor">
-          <path d="M6 12.796V3.204L11.481 8 6 12.796zm.659-8.914L10.567 8l-3.908 4.118V3.882z"/>
-        </svg>
+      <button style={{ width: '28px', height: '28px', background: 'transparent', border: '1px solid transparent', borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <ArrowRight size={16} />
       </button>
-      <button className="toolbar-btn">
-        <svg viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 3a5 5 0 1 0 5 5h1a6 6 0 1 1-6-6V1L5 3.5 8 6V3z"/>
-        </svg>
+      <button style={{ width: '28px', height: '28px', background: 'transparent', border: '1px solid transparent', borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <RotateCw size={16} />
       </button>
-      <button className="toolbar-btn">
-        <svg viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 2 8h1v7h10V8h1a.5.5 0 0 0 .354-.854l-6-6zM7.5 2.207 12.5 7.207V14H3.5V7.207l5-5z"/>
-        </svg>
+      <button style={{ width: '28px', height: '28px', background: 'transparent', border: '1px solid transparent', borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Home size={16} />
       </button>
 
-      <div className="separator-v" />
+      <div style={{ width: '1px', height: '20px', backgroundColor: '#BBBBAA', margin: '0 4px' }} />
 
-      <form className="address-bar" onSubmit={handleNavigate}>
-        <div className="security-icon">
-          {activeTab?.isSecure ? (
-            <svg viewBox="0 0 16 16" fill="#2A6B3C" width="14" height="14">
-              <path d="M8 1a2 2 0 0 1 2 2v2H6V3a2 2 0 0 1 2-2zm3 4V3a3 3 0 0 0-6 0v2H2v10h12V5h-3zM3 6h10v8H3V6z"/>
-            </svg>
-          ) : (
-            <svg viewBox="0 0 16 16" fill="#555" width="14" height="14">
-              <path d="M8 1a2 2 0 0 1 2 2v2H6V3a2 2 0 0 1 2-2zm3 4V3a3 3 0 0 0-6 0v2H2v10h12V5h-3zM3 6h10v8H3V6z"/>
-            </svg>
-          )}
-        </div>
+      {/* Address Bar */}
+      <div 
+        style={{
+          flex: 1,
+          height: '26px',
+          background: focused ? '#FFFFFF' : 'var(--kc-bg-active)',
+          border: focused ? '2px solid var(--kc-accent-hover)' : '1px solid #BBBBAA',
+          borderRadius: '3px',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 8px',
+          fontFamily: 'var(--kc-font-mono)'
+        }}
+      >
+        <span style={{ color: 'var(--kc-success)', marginRight: '8px', display: 'flex' }}><Shield size={14} /></span>
         <input 
           type="text" 
-          value={urlInput}
-          onChange={(e) => setUrlInput(e.target.value)}
-          spellCheck={false}
-          autoComplete="off"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onFocus={() => {
+            setFocused(true);
+          }}
+          onBlur={() => setFocused(false)}
+          style={{
+            flex: 1,
+            border: 'none',
+            outline: 'none',
+            background: 'transparent',
+            fontFamily: 'inherit',
+            fontSize: '13px',
+            color: 'var(--kc-text-primary)'
+          }}
         />
-      </form>
+      </div>
 
-      <div className="separator-v" />
+      <div style={{ width: '1px', height: '20px', backgroundColor: '#BBBBAA', margin: '0 4px' }} />
 
-      <button className="toolbar-btn kc-privacy">
-        <img src="/favicon.ico" alt="" width="20" height="20" />
+      <button style={{ width: '28px', height: '28px', background: 'transparent', border: '1px solid transparent', borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Shield size={16} color="var(--kc-accent-primary)" />
       </button>
-      <button className="toolbar-btn">
-        <svg viewBox="0 0 16 16" fill="currentColor">
-          <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
-        </svg>
+      <button style={{ width: '28px', height: '28px', background: 'transparent', border: '1px solid transparent', borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Puzzle size={16} />
+      </button>
+      <button style={{ width: '28px', height: '28px', background: 'transparent', border: '1px solid transparent', borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Menu size={16} />
       </button>
     </div>
   );
 };
+
+export default Toolbar;

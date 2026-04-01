@@ -1,42 +1,67 @@
-import React from 'react';
-import { useTabStore } from '../store/useTabStore';
+import { Plus, X } from 'lucide-react';
+import { useState } from 'react';
 
-export const TabBar: React.FC = () => {
-  const { tabs, activeTabId, addTab, removeTab, setActiveTab } = useTabStore();
+const TabBar = () => {
+  const [active, setActive] = useState(0);
+  const tabs = ['Home', 'Configurações', 'Pesquisar'];
 
   return (
-    <div className="tab-bar">
-      {tabs.map((tab) => (
-        <div
-          key={tab.id}
-          className={`tab ${tab.id === activeTabId ? 'active' : ''}`}
-          onClick={() => setActiveTab(tab.id)}
-        >
-          {tab.favicon ? (
-            <img src={tab.favicon} alt="" width={16} height={16} />
-          ) : (
-            <div className="tab-favicon-placeholder" />
-          )}
-          
-          <span className="truncate" style={{ flex: 1 }}>
-            {tab.title}
-          </span>
-          
-          <button 
-            className="tab-close-btn" 
-            onClick={(e) => {
-              e.stopPropagation();
-              removeTab(tab.id);
+    <div
+      style={{
+        height: '30px',
+        background: '#D4CFC8',
+        borderTop: '3px solid #E4DFD8',
+        display: 'flex',
+        alignItems: 'end',
+        padding: '0 8px',
+        gap: '2px',
+        flexShrink: 0
+      }}
+    >
+      {tabs.map((tab, idx) => {
+        const isActive = idx === active;
+        return (
+          <div
+            key={idx}
+            onClick={() => setActive(idx)}
+            style={{
+              height: isActive ? '28px' : '26px',
+              maxWidth: '220px',
+              minWidth: '120px',
+              background: isActive ? 'var(--kc-bg-active)' : '#C8C3BB',
+              borderTopLeftRadius: '4px',
+              borderTopRightRadius: '4px',
+              borderTop: `1px solid var(--kc-border-main)`,
+              borderLeft: `1px solid var(--kc-border-main)`,
+              borderRight: `1px solid var(--kc-border-main)`,
+              borderBottom: isActive ? 'none' : `1px solid var(--kc-border-main)`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0 8px',
+              cursor: 'pointer',
+              fontWeight: isActive ? 'bold' : 'normal',
+              zIndex: isActive ? 2 : 1
             }}
           >
-            ×
-          </button>
-        </div>
-      ))}
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tab}</span>
+            <button 
+              style={{ background: 'transparent', border: 'none', display: 'flex' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <X size={14} color="var(--kc-text-secondary)" />
+            </button>
+          </div>
+        )
+      })}
       
-      <button className="new-tab-btn" onClick={() => addTab()}>
-        +
+      <button style={{ 
+        background: 'transparent', border: 'none', marginLeft: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '26px', width: '26px' 
+      }}>
+        <Plus size={16} />
       </button>
     </div>
   );
 };
+
+export default TabBar;
