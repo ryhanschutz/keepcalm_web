@@ -1,47 +1,50 @@
 import React, { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useTabStore } from '../store/useTabStore';
+import type { PrivacyStats } from '../store/useTabStore';
 import { isTauriRuntime } from '../utils/runtime';
 
 export const BackendListener: React.FC = () => {
-  const { updateTab } = useTabStore();
+  const { updateTab, applyPrivacyStats, refreshPrivacyStats } = useTabStore();
 
   useEffect(() => {
     if (!isTauriRuntime()) {
       return;
     }
 
-    // Escutar mudança de URL (redirecionamentos, cliques em links)
+    void refreshPrivacyStats();
+
     const unlistenUrl = listen<[string, string]>('webview-url-change', (event) => {
       const [id, url] = event.payload;
-      updateTab(id, { url });
+      updateTab(id, { url, isLoading: true });
     });
 
-    // Escutar mudança de título
     const unlistenTitle = listen<[string, string]>('webview-title-change', (event) => {
       const [id, title] = event.payload;
       updateTab(id, { title });
     });
 
-    // Escutar início de carregamento
     const unlistenStart = listen<string>('webview-load-started', (event) => {
-      const id = event.payload;
-      updateTab(id, { isLoading: true });
+      updateTab(event.payload, { isLoading: true });
     });
 
-    // Escutar fim de carregamento
-    const unlistenFinished = listen<string>('webview-load-finished', (event) => {
-      // Opcional: tratar URL final do evento
-      console.log('Carregamento finalizado:', event.payload);
+    const unlistenFinished = listen<[string, string]>('webview-load-finished', (event) => {
+      const [id, url] = event.payload;
+      updateTab(id, { isLoading: false, url });
+    });
+
+    const unlistenPrivacyStats = listen<PrivacyStats>('privacy-stats-updated', (event) => {
+      applyPrivacyStats(event.payload);
     });
 
     return () => {
-      unlistenUrl.then(f => f());
-      unlistenTitle.then(f => f());
-      unlistenStart.then(f => f());
-      unlistenFinished.then(f => f());
+      unlistenUrl.then((fn) => fn());
+      unlistenTitle.then((fn) => fn());
+      unlistenStart.then((fn) => fn());
+      unlistenFinished.then((fn) => fn());
+      unlistenPrivacyStats.then((fn) => fn());
     };
-  }, [updateTab]);
+  }, [updateTab, applyPrivacyStats, refreshPrivacyStats]);
 
-  return null; // Componente invisível de lógica
+  return null;
 };

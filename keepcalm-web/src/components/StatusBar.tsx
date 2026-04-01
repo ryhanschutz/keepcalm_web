@@ -1,29 +1,30 @@
-import { ShieldCheck } from 'lucide-react';
+import { Globe, Pencil, Shield } from 'lucide-react';
+import { useTabStore } from '../store/useTabStore';
 
 const StatusBar = () => {
+  const tabs = useTabStore((state) => state.tabs);
+  const activeTabId = useTabStore((state) => state.activeTabId);
+  const privacyStats = useTabStore((state) => state.privacyStats);
+  const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? null;
+
   return (
-    <div
-      style={{
-        height: '22px',
-        background: 'var(--kc-bg-sidebar)',
-        borderTop: '1px solid var(--kc-border-subtle)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 8px',
-        fontSize: '11px',
-        color: 'var(--kc-text-secondary)',
-        flexShrink: 0
-      }}
-    >
-      <div>Concluído</div>
-      
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span>Proteção Forte</span>
-        <ShieldCheck size={12} color="var(--kc-success)" />
-        <span>0 bloqueados</span>
+    <footer className="status-bar">
+      <div className="status-inline">
+        <Globe size={12} />
+        <span>{activeTab?.isInternal ? 'Start Page' : activeTab?.url ?? 'Ready'}</span>
       </div>
-    </div>
+
+      <div className="status-trailing">
+        <div className="status-inline status-inline-privacy">
+          <Shield size={12} />
+          <span>{privacyStats.blocked_requests} blocked</span>
+        </div>
+
+        <button className="customize-button" type="button" aria-label="Customize start page">
+          <Pencil size={14} />
+        </button>
+      </div>
+    </footer>
   );
 };
 

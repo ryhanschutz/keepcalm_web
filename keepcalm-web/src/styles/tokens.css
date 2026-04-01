@@ -1,33 +1,50 @@
 :root {
-  /* Colors - Palette Oficial KeepCalm */
-  --kc-bg-base: #F0EDE8;       /* Fundo principal da janela (bege quente) */
-  --kc-bg-toolbar: #E4DFD8;    /* Barra de ferramentas e abas inativas */
-  --kc-bg-active: #FAFAF8;     /* Aba ativa, painéis em foco */
-  --kc-bg-sidebar: #D8D3CC;    /* Sidebar e painel lateral */
-  --kc-border-main: #AAAA99;   /* Bordas de componentes principais */
-  --kc-border-subtle: #CCCCBB; /* Bordas sutis, separadores internos */
-  --kc-accent-primary: #1A3A5C;/* Azul KeepCalm (cor da marca) */
-  --kc-accent-hover: #2E5B8A;  /* Hover de botões e links de accent */
-  --kc-accent-light: #C5D8EC;  /* Fundo de seleção, highlight de items */
-  --kc-text-primary: #1C1C1C;  /* Texto principal */
-  --kc-text-secondary: #555555;/* Texto secundário, legendas */
-  --kc-text-disabled: #999988; /* Texto desabilitado */
-  --kc-text-on-accent: #FFFFFF;/* Texto sobre fundos accent */
-  --kc-danger: #8B2020;        /* Erros, avisos críticos */
-  --kc-success: #2A6B3C;       /* Confirmações, conexão segura */
-  --kc-warning: #7A5C00;       /* Avisos, modo parcialmente protegido */
+  --kc-bg-deep: #4a4648;
+  --kc-bg-window: rgba(71, 68, 70, 0.82);
+  --kc-bg-toolbar: rgba(53, 51, 52, 0.9);
+  --kc-bg-tab: rgba(83, 80, 82, 0.94);
+  --kc-bg-tab-active: rgba(109, 105, 109, 0.94);
+  --kc-bg-surface: rgba(88, 86, 90, 0.56);
+  --kc-bg-pill: rgba(61, 59, 63, 0.82);
+  --kc-bg-button: rgba(255, 255, 255, 0.08);
+  --kc-surface: rgba(88, 86, 90, 0.56);
 
-  /* Shadows */
-  --kc-shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --kc-shadow-medium: 2px 4px 12px rgba(0, 0, 0, 0.15);
+  --kc-border: rgba(255, 255, 255, 0.14);
+  --kc-border-soft: rgba(255, 255, 255, 0.1);
+  --kc-border-strong: rgba(255, 255, 255, 0.18);
 
-  /* Typography */
-  --kc-font-ui: "Liberation Sans", "Cantarell", sans-serif;
-  --kc-font-mono: "Liberation Mono", "Fira Mono", monospace;
-  --kc-font-serif: "Palatino Linotype", "EB Garamond", serif;
-  
-  --kc-font-size-ui: 13px;
-  --kc-font-size-small: 11px;
-  --kc-font-size-title: 14px;
+  --kc-text-primary: rgba(255, 255, 255, 0.96);
+  --kc-text-secondary: rgba(255, 255, 255, 0.78);
+  --kc-text-muted: rgba(255, 255, 255, 0.54);
+
+  --kc-accent: #7f9aff;
+  --kc-accent-soft: rgba(127, 154, 255, 0.18);
+  --kc-red: #ff5f57;
+  --kc-yellow: #febc2e;
+  --kc-green: #28c840;
+
+  --kc-shadow-window: 0 32px 80px rgba(0, 0, 0, 0.3);
+  --kc-shadow-soft: 0 12px 28px rgba(0, 0, 0, 0.16);
+
+  --kc-font-ui:
+    "SF Pro Display",
+    "SF Pro Text",
+    "Segoe UI Variable Display",
+    "Segoe UI Variable Text",
+    "Segoe UI",
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  --kc-font-mono:
+    "SF Mono",
+    "Cascadia Code",
+    Consolas,
+    monospace;
+  --kc-font-size-ui: 14px;
   --kc-line-height-ui: 1.45;
+
+  --kc-radius-sm: 10px;
+  --kc-radius-md: 16px;
+  --kc-radius-lg: 20px;
+  --kc-radius-xl: 22px;
 }

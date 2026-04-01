@@ -8,61 +8,55 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+}
+
 body {
+  overflow: hidden;
+  user-select: none;
+  color: var(--kc-text-primary);
   font-family: var(--kc-font-ui);
   font-size: var(--kc-font-size-ui);
   line-height: var(--kc-line-height-ui);
-  color: var(--kc-text-primary);
-  background-color: var(--kc-bg-base);
-  user-select: none;
-  overflow: hidden; /* A janela principal não deve ter scroll, apenas a área de conteúdo */
-  height: 100vh;
-  width: 100vw;
+  background:
+    radial-gradient(circle at 16% 40%, rgba(221, 144, 111, 0.55), transparent 20%),
+    radial-gradient(circle at 36% 55%, rgba(120, 127, 191, 0.55), transparent 24%),
+    radial-gradient(circle at 64% 38%, rgba(94, 132, 206, 0.76), transparent 28%),
+    radial-gradient(circle at 82% 56%, rgba(110, 137, 209, 0.7), transparent 20%),
+    linear-gradient(180deg, #5d4d4a 0%, #464348 100%);
 }
 
-button, input, select, textarea {
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--kc-font-serif);
-  font-weight: bold;
+button {
+  cursor: pointer;
 }
 
-/* Scrollbar Style - Estilo clássico (como no Firefox antigo/Cinnamon) */
-::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+input,
+textarea {
+  user-select: text;
 }
 
-::-webkit-scrollbar-track {
-  background: var(--kc-bg-sidebar);
-  border-left: 1px solid var(--kc-border-subtle);
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--kc-font-ui);
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--kc-bg-toolbar);
-  border: 1px solid var(--kc-border-main);
-  border-radius: 2px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--kc-border-subtle);
-}
-
-/* Utility Classes */
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.flex-1 { flex: 1; }
-.items-center { align-items: center; }
-.justify-between { justify-content: space-between; }
-.gap-1 { gap: 4px; }
-.gap-2 { gap: 8px; }
-
-.truncate {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+::selection {
+  background: rgba(255, 255, 255, 0.18);
 }

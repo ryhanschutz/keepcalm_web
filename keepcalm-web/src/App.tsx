@@ -1,30 +1,40 @@
-import React, { useState } from 'react';
-import WindowChrome from './components/WindowChrome';
-import TabBar from './components/TabBar';
+import React, { useEffect, useState } from 'react';
 import Toolbar from './components/Toolbar';
+import TabBar from './components/TabBar';
 import ContentArea from './components/ContentArea';
 import StatusBar from './components/StatusBar';
-
-// Importando componentes pré-existentes
 import { BackendListener } from './components/BackendListener';
 import { NetworkSettings } from './components/NetworkSettings';
+import { PrivacyPanel } from './components/PrivacyPanel';
+import { useTabStore } from './store/useTabStore';
 
 const App: React.FC = () => {
   const [isNetworkSettingsOpen, setIsNetworkSettingsOpen] = useState(false);
+  const [isPrivacyPanelOpen, setIsPrivacyPanelOpen] = useState(false);
+  const ensureInitialTab = useTabStore((state) => state.ensureInitialTab);
+
+  useEffect(() => {
+    void ensureInitialTab();
+  }, [ensureInitialTab]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw' }}>
-      <WindowChrome />
-      <TabBar />
-      <Toolbar />
-      <ContentArea />
-      <StatusBar />
-      
-      {/* Componentes invisíveis ou modais mantidos para não quebrar dependências do antigo state */}
+    <div className="app-shell">
+      <div className="browser-window">
+        <Toolbar onTogglePrivacyPanel={() => setIsPrivacyPanelOpen((prev) => !prev)} />
+        <TabBar />
+        <ContentArea />
+        <StatusBar />
+      </div>
+
       <BackendListener />
-      <NetworkSettings 
-        isOpen={isNetworkSettingsOpen} 
-        onClose={() => setIsNetworkSettingsOpen(false)} 
+      <PrivacyPanel
+        isOpen={isPrivacyPanelOpen}
+        onClose={() => setIsPrivacyPanelOpen(false)}
+        onOpenNetworkSettings={() => setIsNetworkSettingsOpen(true)}
+      />
+      <NetworkSettings
+        isOpen={isNetworkSettingsOpen}
+        onClose={() => setIsNetworkSettingsOpen(false)}
       />
     </div>
   );
