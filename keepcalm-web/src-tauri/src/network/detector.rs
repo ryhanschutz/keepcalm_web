@@ -1,4 +1,4 @@
-use crate::network::{NetworkProfile, NetworkStatus, Result};
+use crate::network::{NetworkProfile, NetworkStatus, Result, NetworkLayer};
 use crate::network::tor::TorLayer;
 use std::time::Instant;
 use std::sync::Arc;

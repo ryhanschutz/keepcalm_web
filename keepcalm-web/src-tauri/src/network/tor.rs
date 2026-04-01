@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use crate::network::{NetworkLayer, Result, AsyncReadWrite};
 use url::Url;
-use arti_client::{TorClient, TorClientConfig, config::bridge::BridgeConfigBuilder};
+use arti_client::{TorClient, TorClientConfig, config::BridgeConfigBuilder, config::BoolOrAuto};
 use tor_rtcompat::PreferredRuntime;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -35,18 +35,17 @@ impl TorLayer {
         let mut config_builder = TorClientConfig::builder();
 
         if self.use_bridges {
+            config_builder.bridges().enabled(BoolOrAuto::Explicit(true));
             for bridge_line in BUILTIN_BRIDGES {
-                let bridge_config = BridgeConfigBuilder::default()
-                    .push_line(bridge_line)?
-                    .build()?;
-                config_builder.bridges().enabled(true).push_bridge(bridge_config);
+                let bridge_config: BridgeConfigBuilder = bridge_line.parse()?;
+                config_builder.bridges().bridges().push(bridge_config);
             }
         }
 
         let config = config_builder.build()?;
         
-        // Arti v0.22 flow: create unbootstrapped, then bootstrap
-        let client = TorClient::create_unbootstrapped(config)?;
+        // Arti v0.22 flow: use TorClient::with_config
+        let client = TorClient::with_config(config).create_unbootstrapped()?;
         
         // Timeout de 15 segundos conforme especificação v1.1 para o bootstrap
         match tokio::time::timeout(Duration::from_secs(15), client.bootstrap()).await {
