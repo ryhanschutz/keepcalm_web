@@ -20,6 +20,21 @@ export interface Tab {
   partition: string;
 }
 
+export interface Bookmark {
+  id: string;
+  url: string;
+  title: string;
+  addedAt: number;
+}
+
+export interface DownloadInfo {
+  url: string;
+  destination: string | null;
+  downloaded: number;
+  total: number | null;
+  status: 'started' | 'progress' | 'finished' | 'canceled';
+}
+
 export interface PrivacyStats {
   blocked_requests: number;
   blocked_top_level_navigations: number;
@@ -37,6 +52,8 @@ const DEFAULT_PRIVACY_STATS: PrivacyStats = {
 interface TabState {
   tabs: Tab[];
   activeTabId: string | null;
+  bookmarks: Bookmark[];
+  activeDownload: DownloadInfo | null;
   privacyStats: PrivacyStats;
   hasHydrated: boolean;
   setHydrated: (hydrated: boolean) => void;
@@ -53,14 +70,19 @@ interface TabState {
   navigateBack: () => Promise<void>;
   navigateForward: () => Promise<void>;
   reloadActiveTab: () => Promise<void>;
+  toggleBookmark: (url: string, title?: string) => void;
+  setActiveDownload: (download: DownloadInfo | null) => void;
+  updateDownloadProgress: (downloaded: number, total: number | null) => void;
 }
 
 export const useTabStore = create<TabState>()(
   persist(
     (set, get) => ({
-      tabs: [],
-      activeTabId: null,
-      privacyStats: DEFAULT_PRIVACY_STATS,
+    tabs: [],
+    activeTabId: null,
+    bookmarks: [],
+    activeDownload: null,
+    privacyStats: DEFAULT_PRIVACY_STATS,
       hasHydrated: false,
       setHydrated: (hydrated) => set({ hasHydrated: hydrated }),
 
@@ -305,6 +327,39 @@ export const useTabStore = create<TabState>()(
           get().updateTab(activeTab.id, { isLoading: false });
         }
       },
+
+      toggleBookmark: (url, title) => {
+        const currentBookmarks = get().bookmarks;
+        const exists = currentBookmarks.find((b) => b.url === url);
+
+        if (exists) {
+          set({
+            bookmarks: currentBookmarks.filter((b) => b.url !== url),
+          });
+        } else {
+          set({
+            bookmarks: [
+              ...currentBookmarks,
+              {
+                id: crypto.randomUUID(),
+                url,
+                title: title || url,
+                addedAt: Date.now(),
+              },
+            ],
+          });
+        }
+      },
+
+      setActiveDownload: (download) => set({ activeDownload: download }),
+      updateDownloadProgress: (downloaded, total) => {
+        const current = get().activeDownload;
+        if (current) {
+          set({
+            activeDownload: { ...current, downloaded, total, status: 'progress' }
+          });
+        }
+      },
     }),
     {
       name: 'keepcalm-tab-session',
@@ -316,6 +371,8 @@ export const useTabStore = create<TabState>()(
           isLoading: false,
         })),
         activeTabId: state.activeTabId,
+        bookmarks: state.bookmarks,
+        // activeDownload não é persistido para evitar fantasmas de downloads antigos
       }),
       onRehydrateStorage: () => (state, error) => {
         if (error) {

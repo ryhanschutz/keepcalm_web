@@ -2,13 +2,11 @@
 
 ## 📍 Aonde Estamos (Estado Atual)
 
-### ✅ Estabilização Completa (Tauri v2)
+### ✅ Estabilização e Sessão Concluídas
 *   **Rust Backend**: Motor Aho-Corasick carregando 153k+ regras. Proteção Anti-Capture ativa.
-*   **UI Stabilization**: 
-    - Arraste de janela manual (`startDragging`) totalmente funcional.
-    - Gerenciamento de abas restaurado (Correção de conflito de clique).
-    - Design System Nocturnal Safari consolidado.
-*   **Networking**: Gerenciamento de WebViews nativas sincronizado com o layout React via `ResizeObserver`.
+*   **Persistência (Zustand)**: Sessão de abas restaurada automaticamente entre reinicializações.
+*   **Stealth Features**: Atalho Global (`Ctrl+Shift+K`) e ocultação de Taskbar ativos.
+*   **UI Stabilization**: Arraste e gerenciamento de abas estáveis.
 
 ---
 

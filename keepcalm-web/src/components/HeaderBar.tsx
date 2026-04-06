@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { 
-  ArrowLeft, ArrowRight, Shield, Puzzle, Menu, Plus, X, Minus, Square 
+  ArrowLeft, ArrowRight, Shield, Puzzle, Menu, Plus, X, Minus, Square, Star 
 } from 'lucide-react';
+import DownloadIndicator from './DownloadIndicator';
 import logo from '../assets/logo.png';
 
 import { useTabStore } from '../store/useTabStore';
@@ -15,9 +16,21 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ onTogglePrivacyPanel }) => {
   const [appWindow, setAppWindow] = useState<any>(null);
   const [focused, setFocused] = useState(false);
   
-  const { tabs, activeTabId, setActiveTab, addTab, removeTab, navigate, navigateBack, navigateForward } = useTabStore();
+  const { 
+    tabs, 
+    activeTabId, 
+    bookmarks,
+    setActiveTab, 
+    addTab, 
+    removeTab, 
+    navigate, 
+    navigateBack, 
+    navigateForward,
+    toggleBookmark
+  } = useTabStore();
   const activeTab = tabs.find(t => t.id === activeTabId);
   const [url, setUrl] = useState(activeTab?.url || '');
+  const isBookmarked = bookmarks.some(b => b.url === activeTab?.url);
 
   // Sincronizar URL local quando a aba ativa mudar
   useEffect(() => {
@@ -180,6 +193,24 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ onTogglePrivacyPanel }) => {
                       width: '100%',
                     }}
                   />
+                  <button
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={() => toggleBookmark(tab.url, tab.title)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: isBookmarked ? '#FFD700' : 'var(--kc-text-secondary)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0 4px',
+                      transition: 'all 0.2s',
+                      opacity: isBookmarked ? 1 : 0.5
+                    }}
+                    title={isBookmarked ? 'Remover Favorito' : 'Adicionar Favorito'}
+                  >
+                    <Star size={14} fill={isBookmarked ? '#FFD700' : 'none'} strokeWidth={1.5} />
+                  </button>
                 </div>
               )}
               
@@ -210,6 +241,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ onTogglePrivacyPanel }) => {
       {/* Lado Direito: Ações e Controles */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', zIndex: 1001 }} onMouseDown={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', gap: '2px', marginRight: '8px' }}>
+          <DownloadIndicator />
           <button style={actionBtnStyle}><Puzzle size={16} strokeWidth={1.2} /></button>
           <button 
             style={actionBtnStyle}

@@ -5,11 +5,14 @@ import { useTabStore } from '../store/useTabStore';
 import { isTauriRuntime } from '../utils/runtime';
 
 const ContentArea = () => {
-  const tabs = useTabStore((state) => state.tabs);
-  const activeTabId = useTabStore((state) => state.activeTabId);
-  const privacyStats = useTabStore((state) => state.privacyStats);
-  const navigate = useTabStore((state) => state.navigate);
-  const updateTab = useTabStore((state) => state.updateTab);
+  const { 
+    tabs, 
+    activeTabId, 
+    privacyStats, 
+    navigate, 
+    updateTab, 
+    bookmarks 
+  } = useTabStore();
   const contentRef = useRef<HTMLDivElement | null>(null);
   const tauri = isTauriRuntime();
 
@@ -77,12 +80,6 @@ const ContentArea = () => {
     };
   }, [tabs, activeTabId, tauri]);
 
-  const favorites = [
-    { name: 'KeepCalm', short: 'K', tone: 'silver', url: 'https://keepcalm.app' },
-    { name: 'Search', short: 'S', tone: 'red', url: 'https://duckduckgo.com' },
-    { name: 'Add More', short: '+', tone: 'graphite', url: '' },
-  ];
-
   const shouldRenderStartPage = !activeTab || activeTab.isInternal;
   const shouldRenderPreviewFrame = !shouldRenderStartPage && !tauri && !!activeTab;
 
@@ -95,23 +92,38 @@ const ContentArea = () => {
           <section className="start-group">
             <h2>Your Favourites</h2>
             <div className="favorite-grid">
-              {favorites.map((favorite) => (
-                <button
-                  key={favorite.name}
+              {bookmarks.length > 0 ? (
+                bookmarks.map((bookmark) => (
+                  <button
+                    key={bookmark.url}
+                    type="button"
+                    className="favorite-tile"
+                    onClick={() => navigate(bookmark.url)}
+                  >
+                    <span className="favorite-badge tone-silver">
+                      {(bookmark.title || bookmark.url).charAt(0).toUpperCase()}
+                    </span>
+                    <span className="favorite-name">{bookmark.title || bookmark.url}</span>
+                  </button>
+                ))
+              ) : (
+                <div style={{ color: 'var(--kc-text-secondary)', fontSize: '13px', opacity: 0.6, padding: '20px 0' }}>
+                  Seus favoritos aparecerão aqui.
+                </div>
+              )}
+              {/* Botão sempre presente para facilitar a navegação inicial se estiver vazio */}
+              {bookmarks.length === 0 && (
+                 <button
                   type="button"
                   className="favorite-tile"
-                  onClick={() => {
-                    if (favorite.url) {
-                      void navigate(favorite.url);
-                    }
-                  }}
+                  onClick={() => navigate('https://google.com')}
                 >
-                  <span className={`favorite-badge tone-${favorite.tone}`}>
-                    {favorite.short === '+' ? <Plus size={28} /> : favorite.short}
+                  <span className="favorite-badge tone-graphite">
+                    <Plus size={28} />
                   </span>
-                  <span className="favorite-name">{favorite.name}</span>
+                  <span className="favorite-name">Começar</span>
                 </button>
-              ))}
+              )}
             </div>
           </section>
 

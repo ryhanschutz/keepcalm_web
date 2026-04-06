@@ -1,11 +1,13 @@
 import React, { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useTabStore } from '../store/useTabStore';
+import { useDownloadStore } from '../store/useDownloadStore';
 import type { PrivacyStats } from '../store/useTabStore';
 import { isTauriRuntime } from '../utils/runtime';
 
 export const BackendListener: React.FC = () => {
   const { updateTab, applyPrivacyStats, refreshPrivacyStats } = useTabStore();
+  const { addDownload, updateProgress, finishDownload, cancelDownload } = useDownloadStore();
 
   useEffect(() => {
     if (!isTauriRuntime()) {
@@ -37,14 +39,35 @@ export const BackendListener: React.FC = () => {
       applyPrivacyStats(event.payload);
     });
 
+    // Download Events
+    const unlistenDownloadStarted = listen<{ id: string; filename: string; total_size?: number; path?: string }>('download-started', (event) => {
+      addDownload(event.payload.id, event.payload.filename, event.payload.total_size, event.payload.path);
+    });
+
+    const unlistenDownloadProgress = listen<{ id: string; downloaded: number; total?: number }>('download-progress', (event) => {
+      updateProgress(event.payload.id, event.payload.downloaded, event.payload.total);
+    });
+
+    const unlistenDownloadFinished = listen<string>('download-finished', (event) => {
+      finishDownload(event.payload);
+    });
+
+    const unlistenDownloadCanceled = listen<string>('download-canceled', (event) => {
+      cancelDownload(event.payload);
+    });
+
     return () => {
       unlistenUrl.then((fn) => fn());
       unlistenTitle.then((fn) => fn());
       unlistenStart.then((fn) => fn());
       unlistenFinished.then((fn) => fn());
       unlistenPrivacyStats.then((fn) => fn());
+      unlistenDownloadStarted.then((fn) => fn());
+      unlistenDownloadProgress.then((fn) => fn());
+      unlistenDownloadFinished.then((fn) => fn());
+      unlistenDownloadCanceled.then((fn) => fn());
     };
-  }, [updateTab, applyPrivacyStats, refreshPrivacyStats]);
+  }, [updateTab, applyPrivacyStats, refreshPrivacyStats, addDownload, updateProgress, finishDownload, cancelDownload]);
 
   return null;
 };

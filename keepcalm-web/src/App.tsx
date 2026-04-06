@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import HeaderBar from './components/HeaderBar';
+import BookmarksBar from './components/BookmarksBar';
 import ContentArea from './components/ContentArea';
 import StatusBar from './components/StatusBar';
 import { BackendListener } from './components/BackendListener';
@@ -131,6 +132,7 @@ const App: React.FC = () => {
       overflow: 'hidden'
     }}>
       <HeaderBar onTogglePrivacyPanel={() => setIsPrivacyPanelOpen(prev => !prev)} />
+      <BookmarksBar />
       
       <main 
         ref={mainRef}
