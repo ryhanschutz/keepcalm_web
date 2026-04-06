@@ -1,7 +1,7 @@
 use tauri::{AppHandle, Manager, WebviewBuilder, WebviewUrl, Emitter, State};
-use crate::privacy::request_filter::RequestDecision;
+use crate::privacy::request_filter::{RequestFilter, RequestDecision};
 use crate::network::detector::NetworkDetector;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 #[tauri::command]
 pub async fn create_tab_webview(
@@ -10,6 +10,7 @@ pub async fn create_tab_webview(
     url: String,
     _partition: String,
     detector: State<'_, Arc<NetworkDetector>>,
+    filter_state: State<'_, Arc<RwLock<RequestFilter>>>,
 ) -> Result<(), String> {
     let window = app.get_webview_window("main").ok_or("Janela principal não encontrada")?;
     
@@ -26,13 +27,14 @@ pub async fn create_tab_webview(
     };
 
     let anti_fingerprint_script = crate::privacy::fingerprint::generate_override_script(&id);
-    let filter = crate::privacy::request_filter::RequestFilter::new();
-
     let id_clone = id.clone();
     let app_handle = app.clone();
     let title_event_app = app.clone();
     let title_event_id = id.clone();
     let load_event_app = app.clone();
+
+    // Capturar o filtro para uso na interceptação global (Fase 2)
+    let filter = Arc::clone(&filter_state);
 
     let mut webview_builder = WebviewBuilder::new(&id, webview_url)
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
@@ -46,14 +48,21 @@ pub async fn create_tab_webview(
         }
     }
 
-    let webview_builder = webview_builder.on_navigation(move |url| {
-            // Aplicar filtro de privacidade na navegação top-level
-            if let RequestDecision::Block = filter.decide(url.as_str()) {
-                println!("[KeepCalm] Bloqueando navegação insegura: {}", url);
-                return false; // Cancela a navegação
+    // Interceptação Nativa (Fase 2): Interceptar todos os recursos (scripts, imagens, etc.)
+    let webview_builder = webview_builder.on_web_resource_request(move |request, response| {
+        let uri = request.uri().to_string();
+        
+        // Bloquear apenas recursos de terceiros ou rastreadores conhecidos
+        if let Ok(filter_guard) = filter.read() {
+            if let RequestDecision::Block = filter_guard.decide(&uri, "", "other") {
+                println!("[KeepCalm] Bloqueando recurso invasivo: {}", uri);
+                response.set_status(tauri::http::StatusCode::FORBIDDEN);
             }
-            
-            // Notificar o frontend sobre a mudança de URL
+        }
+    });
+
+    let webview_builder = webview_builder.on_navigation(move |url| {
+            // Notificar o frontend sobre a mudança de URL principal
             app_handle.emit("webview-url-change", (id_clone.clone(), url.to_string())).ok();
             true
         })
@@ -118,7 +127,7 @@ pub async fn update_webview_url(
         };
         webview.navigate(webview_url).map_err(|e| e.to_string())?;
         
-        // Ativar flag de carregando no frontend
+        // Ativando flag de carregando no frontend
         app_handle.emit("webview-load-started", id).ok();
     }
     Ok(())

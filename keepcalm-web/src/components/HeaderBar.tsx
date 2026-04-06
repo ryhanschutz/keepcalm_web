@@ -5,21 +5,22 @@ import {
 } from 'lucide-react';
 import logo from '../assets/logo.png';
 
-interface HeaderBarProps {
-  onNavigate?: (url: string) => void;
-  currentUrl?: string;
-}
+import { useTabStore } from '../store/useTabStore';
 
-const HeaderBar: React.FC<HeaderBarProps> = ({ onNavigate, currentUrl = '' }) => {
+const HeaderBar: React.FC = () => {
   const [appWindow, setAppWindow] = useState<any>(null);
-  const [url, setUrl] = useState(currentUrl || 'wikipedia.org');
   const [focused, setFocused] = useState(false);
-  const [activeTab, setActiveTab] = useState(0);
+  
+  const { tabs, activeTabId, setActiveTab, addTab, removeTab, navigate } = useTabStore();
+  const activeTab = tabs.find(t => t.id === activeTabId);
+  const [url, setUrl] = useState(activeTab?.url || '');
 
-  const tabs = [
-    { title: 'Wikipedia', url: 'wikipedia.org' },
-    { title: 'KeepCalm Web', url: '' }
-  ];
+  // Sincronizar URL local quando a aba ativa mudar
+  useEffect(() => {
+    if (activeTab) {
+      setUrl(activeTab.url);
+    }
+  }, [activeTabId, activeTab?.url]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
@@ -29,7 +30,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ onNavigate, currentUrl = '' }) =>
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      onNavigate?.(url);
+      navigate(url);
       (e.target as HTMLInputElement).blur();
     }
   };
@@ -80,12 +81,12 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ onNavigate, currentUrl = '' }) =>
         height: '32px',
         overflow: 'hidden'
       }}>
-        {tabs.map((tab, idx) => {
-          const isActive = idx === activeTab;
+        {tabs.map((tab) => {
+          const isActive = tab.id === activeTabId;
           return (
             <div
-              key={idx}
-              onClick={() => setActiveTab(idx)}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
               style={{
                 height: '32px',
                 minWidth: isActive ? '200px' : '140px',
@@ -133,19 +134,25 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ onNavigate, currentUrl = '' }) =>
                 </div>
               )}
               
-              <button style={{ 
-                background: 'transparent', border: 'none', color: 'var(--kc-text-secondary)', opacity: 0.4, padding: '4px' 
-              }}>
+              <button 
+                onClick={(e) => { e.stopPropagation(); removeTab(tab.id); }}
+                style={{ 
+                  background: 'transparent', border: 'none', color: 'var(--kc-text-secondary)', opacity: 0.4, padding: '4px' 
+                }}
+              >
                 <X size={10} />
               </button>
             </div>
           );
         })}
         
-        <button style={{ 
-          width: '28px', height: '28px', background: 'transparent', border: 'none', color: 'var(--kc-text-secondary)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
+        <button 
+          onClick={() => addTab()}
+          style={{ 
+            width: '28px', height: '28px', background: 'transparent', border: 'none', color: 'var(--kc-text-secondary)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+          }}
+        >
           <Plus size={16} />
         </button>
       </div>
