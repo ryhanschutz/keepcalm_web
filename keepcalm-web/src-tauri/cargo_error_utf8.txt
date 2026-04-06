@@ -1,0 +1,94 @@
+﻿cargo :     Checking 
+keepcalm-web v0.1.0 (C:\Use
+rs\ryhan_Schutz\Documents\k
+eepcalm_Web\keepcalm_web\ke
+epcalm-web\src-tauri)
+No linha:1 caractere:1
++ cargo check > 
+cargo_error.txt 2>&1; 
+Get-Content 
+cargo_error.txt -Tail ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (     
+   Checking ke...-web\sr   
+ c-tauri):String) [], R    
+emoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+error[E0599]: no method 
+named `set_status` found 
+for mutable reference 
+`&mut tauri::http::Response
+<Cow<'static, [u8]>>` in 
+the current scope
+   --> 
+src\commands\tabs.rs:52:26
+    |
+ 52 |                 respo
+nse.set_status(tauri::http:
+:StatusCode::FORBIDDEN);
+    |                      
+    ^^^^^^^^^^
+    |
+help: there is a method 
+`status` with a similar 
+name, but with different 
+arguments
+   --> C:\Users\ryhan_Schut
+z\.cargo\registry\src\index
+.crates.io-1949cf8c6b5b557f
+\http-1.4.0\src\response.rs
+:284:5
+    |
+284 |     pub fn 
+status(&self) -> 
+StatusCode {
+    |     ^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^
+
+error[E0061]: this method 
+takes 3 arguments but 1 
+argument was supplied
+  --> 
+src\privacy\mod.rs:24:21
+   |
+24 |         
+self.filter.decide(url)
+   |                     
+^^^^^^----- two arguments 
+of type `&str` and `&str` 
+are missing
+   |
+note: method defined here
+  --> src\privacy\request_f
+ilter.rs:44:12
+   |
+44 |     pub fn 
+decide(&self, url: &str, 
+_source_url: &str, 
+_resource_type: &str) -> 
+RequestDecision {
+   |            ^^^^^^     
+              
+-----------------  
+--------------------
+help: provide the arguments
+   |
+24 |         
+self.filter.decide(url, /* 
+&str */, /* &str */)
+   |                       
+        
+++++++++++++++++++++++++
+
+Some errors have detailed 
+explanations: E0061, E0599.
+For more information about 
+an error, try `rustc 
+--explain E0061`.
+error: could not compile 
+`keepcalm-web` (lib) due 
+to 2 previous errors

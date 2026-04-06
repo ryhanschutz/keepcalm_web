@@ -1,5 +1,7 @@
 use crate::network::{NetworkLayer, Result, AsyncReadWrite};
 use url::Url;
+use tokio::net::TcpStream;
+use tokio::time::{timeout, Duration};
 
 pub struct DohLayer {
     pub provider_url: String,
@@ -16,9 +18,15 @@ impl DohLayer {
 #[async_trait::async_trait]
 impl NetworkLayer for DohLayer {
     async fn probe(&self) -> Result<bool> {
-        // Enviar requisição DoH simplificada de teste
-        // Timeout de 3s obrigatório pela spec
-        Ok(true) // Mock por enquanto
+        let parsed = Url::parse(&self.provider_url)?;
+        let host = parsed
+            .host_str()
+            .ok_or_else(|| "DoH provider sem hostname".to_string())?;
+        let port = parsed.port_or_known_default().unwrap_or(443);
+
+        let target = format!("{host}:{port}");
+        let connected = timeout(Duration::from_secs(3), TcpStream::connect(target)).await;
+        Ok(matches!(connected, Ok(Ok(_))))
     }
 
     async fn connect(&self, _url: &Url) -> Result<Box<dyn AsyncReadWrite>> {

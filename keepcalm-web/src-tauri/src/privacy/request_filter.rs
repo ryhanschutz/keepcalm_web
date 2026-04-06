@@ -1,5 +1,4 @@
-use adblock::engine::Engine;
-use adblock::lists::ParseOptions;
+use aho_corasick::AhoCorasick;
 use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
@@ -11,37 +10,43 @@ pub enum RequestDecision {
 
 #[derive(Clone)]
 pub struct RequestFilter {
-    engine: Arc<Engine>,
+    matcher: Option<Arc<AhoCorasick>>,
 }
 
 impl RequestFilter {
     pub fn new() -> Self {
         Self {
-            engine: Arc::new(Engine::default()),
+            matcher: None,
         }
     }
 
     pub fn load_rules(&mut self, rules: Vec<String>) {
-        let mut filter_set = adblock::lists::FilterSet::new();
-        for rule in rules {
-            filter_set.add_filter_line(&rule, ParseOptions::default()).ok();
+        if rules.is_empty() {
+            self.matcher = None;
+            return;
         }
-        // Construir o engine e substituir o Arc atual
-        self.engine = Arc::new(Engine::from_filter_set(filter_set, true));
+
+        // Compila todas as regras em um autômato Aho-Corasick para busca instantânea
+        // Filtramos regras ABP complexas que não são substrings puras para não quebrar o motor
+        let clean_patterns: Vec<String> = rules.into_iter()
+            .filter(|r| !r.starts_with('@') && !r.contains('$')) // Evitar regras de exceção/opção ABP
+            .map(|r| r.replace("||", "").replace('^', ""))      // Normalizar para substrings
+            .collect();
+
+        if let Ok(matcher) = AhoCorasick::builder()
+            .ascii_case_insensitive(true)
+            .build(clean_patterns) 
+        {
+            self.matcher = Some(Arc::new(matcher));
+        }
     }
 
-    pub fn decide(&self, url: &str, source_url: &str, resource_type: &str) -> RequestDecision {
-        // Engenharia de adblock costuma usar tipos específicos, mas passaremos como string por enquanto
-        let blocker_result = self.engine.check_network_request(
-            url,
-            source_url,
-            resource_type,
-        );
-
-        if blocker_result.matched {
-            RequestDecision::Block
-        } else {
-            RequestDecision::Allow
+    pub fn decide(&self, url: &str, _source_url: &str, _resource_type: &str) -> RequestDecision {
+        if let Some(ref matcher) = self.matcher {
+            if matcher.is_match(url) {
+                return RequestDecision::Block;
+            }
         }
+        RequestDecision::Allow
     }
 }

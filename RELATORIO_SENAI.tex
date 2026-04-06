@@ -1,0 +1,90 @@
+\documentclass[12pt,a4paper]{article}
+
+% --- Pacotes Básicos ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{geometry}
+\geometry{a4paper, left=3cm, right=2cm, top=3cm, bottom=2cm}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+% --- Configurações de Código ---
+\usepackage{listings}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstset{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+
+% --- Informações do Documento ---
+\title{
+    \large \textbf{Relatório de Desenvolvimento Didático: KeepCalm Web Browser} \\
+    \small Projeto Acadêmico para Demonstração de Habilidades em Programação Full-Stack
+}
+\author{Estudante: Ryhan Schutz \\ Instituição: SENAI}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\onehalfspacing
+
+\begin{abstract}
+Este relatório documenta o processo de desenvolvimento do navegador KeepCalm Web, construído utilizando a infraestrutura Tauri v2, Rust e React. O projeto possui fins puramente didáticos, visando o aprimoramento de competências em desenvolvimento de sistemas, integração nativa e segurança da informação.
+\end{abstract}
+
+\section{Introdução}
+O desenvolvimento de um navegador web contemporâneo apresenta desafios complexos que transcendem a simples exibição de páginas. Este projeto foi concebido como uma ferramenta de aprendizado prático no contexto das disciplinas de programação do SENAI. O objetivo principal não é competir comercialmente, mas sim compreender as nuances de comunicação entre processos (IPC), gerenciamento de estados no Frontend e segurança de memória no Backend usando a linguagem Rust.
+
+\section{Arquitetura e Tecnologias}
+Para a construção do software, foram selecionadas tecnologias de ponta que exigem alto rigor técnico:
+
+\begin{itemize}
+    \item \textbf{Tauri v2 (Framework)}: Utilizado para criar a ponte entre a interface web e o sistema operacional.
+    \item \textbf{Rust (Backend)}: Responsável pelo motor de filtragem de rede e lógica de privacidade, garantindo performance e segurança.
+    \item \textbf{React \& TypeScript (Frontend)}: Utilizados para a interface de usuário (UI), permitindo uma experiência dinâmica e tipagem forte.
+    \item \textbf{Zustand}: Gerenciamento de estado leve para controle de abas e sessões.
+\end{itemize}
+
+\section{Desafios Técnicos e Aprendizado}
+Durante a execução, diversos obstáculos surgiram, servindo como oportunidades pedagógicas cruciais.
+
+\subsection{Gerenciamento de Client-Side Decorations (CSD)}
+Um dos maiores desafios foi a implementação de uma barra de título personalizada que permitisse o arraste da janela nativa. Inicialmente, conflitos de eventos de mouse entre o React e o Tauri impediam o movimento suave da janela. A solução envolveu o estudo aprofundado de propagação de eventos e o uso de APIs nativas como \texttt{startDragging()}.
+
+\subsection{Integração de WebViews Dinâmicas}
+O gerenciamento de múltiplas abas exigiu uma sincronização precisa entre o estado do Zustand e o ciclo de vida das WebViews no Rust. Erros de \textit{lifetime} e concorrência no Rust foram diagnosticados e corrigidos, reforçando o aprendizado sobre o gerenciador de memória do Rust (Borrow Checker).
+
+\section{Relatório de Erros e Diagnóstico}
+Conforme a intenção de reportar o progresso ao SENAI, mantemos um log de erros que ilustra a evolução do projeto:
+
+\begin{enumerate}
+    \item \textbf{Erro de Permissões (Capabilities)}: Inicialmente as funções de minimizar/maximizar foram bloqueadas por segurança. \textbf{Solução}: Configuração correta do arquivo \texttt{default.json} no Tauri v2.
+    \item \textbf{Conflito de UI}: Elementos do estilo \textit{Nocturnal Safari} estavam sobrepondo as áreas clicáveis. \textbf{Solução}: Ajuste de Z-Index e isolamento de eventos via \texttt{e.stopPropagation()}.
+\end{enumerate}
+
+\section{Conclusão}
+O KeepCalm Web atingiu seus objetivos pedagógicos iniciais, apresentando um navegador funcional, seguro e com interface moderna. O processo demonstrou que a depuração constante e a documentação de erros são partes integrantes e valiosas da formação de um desenvolvedor de sistemas.
+
+\end{document}

@@ -12,28 +12,24 @@ pub async fn create_tab_webview(
     detector: State<'_, Arc<NetworkDetector>>,
     filter_state: State<'_, Arc<RwLock<RequestFilter>>>,
 ) -> Result<(), String> {
-    let window = app.get_webview_window("main").ok_or("Janela principal não encontrada")?;
-    
-    let webview_url = if url == "about:blank" || url.is_empty() {
-        WebviewUrl::External("about:blank".parse().unwrap())
-    } else {
-        match url.parse() {
-            Ok(u) => WebviewUrl::External(u),
-            Err(_) => {
-                let search_url = format!("https://duckduckgo.com/?q={}", url);
-                WebviewUrl::External(search_url.parse().unwrap())
-            }
-        }
-    };
+    println!("[KeepCalm] Comando Rust: Criando aba {} -> {}", id, url);
+    let window = app
+        .get_webview_window("main")
+        .ok_or("Janela principal nao encontrada")?;
 
+    let webview_url = resolve_webview_url(&url);
     let anti_fingerprint_script = crate::privacy::fingerprint::generate_override_script(&id);
+    
     let id_clone = id.clone();
     let app_handle = app.clone();
     let title_event_app = app.clone();
     let title_event_id = id.clone();
-    let load_event_app = app.clone();
+    let start_event_app = app.clone();
+    let start_event_id = id.clone();
+    let finish_event_app = app.clone();
+    let finish_event_id = id.clone();
 
-    // Capturar o filtro para uso na interceptação global (Fase 2)
+    // Capturar o filtro global para interceptação
     let filter = Arc::clone(&filter_state);
 
     let mut webview_builder = WebviewBuilder::new(&id, webview_url)
@@ -41,48 +37,52 @@ pub async fn create_tab_webview(
         .initialization_script(&anti_fingerprint_script)
         .incognito(true);
 
-    // Aplicar Proxy se detectado pelo Smart Fallback
     if let Some(proxy_url_str) = detector.get_active_proxy().await {
         if let Ok(proxy_url) = proxy_url_str.parse() {
             webview_builder = webview_builder.proxy_url(proxy_url);
         }
     }
 
-    // Interceptação Nativa (Fase 2): Interceptar todos os recursos (scripts, imagens, etc.)
+    // Interceptação Nativa (Fase 2): Filtro de Recursos (Scripts, Imagens, etc.)
     let webview_builder = webview_builder.on_web_resource_request(move |request, response| {
         let uri = request.uri().to_string();
         
-        // Bloquear apenas recursos de terceiros ou rastreadores conhecidos
         if let Ok(filter_guard) = filter.read() {
-            if let RequestDecision::Block = filter_guard.decide(&uri, "", "other") {
+            // Deref explícito para evitar confusão de métodos do Guard
+            if let RequestDecision::Block = (*filter_guard).decide(&uri, "", "other") {
                 println!("[KeepCalm] Bloqueando recurso invasivo: {}", uri);
-                response.set_status(tauri::http::StatusCode::FORBIDDEN);
+                *response.status_mut() = tauri::http::StatusCode::FORBIDDEN;
             }
         }
     });
 
-    let webview_builder = webview_builder.on_navigation(move |url| {
-            // Notificar o frontend sobre a mudança de URL principal
-            app_handle.emit("webview-url-change", (id_clone.clone(), url.to_string())).ok();
+    let webview_builder = webview_builder
+        .on_navigation(move |url| {
+            // Notificar frontend sobre mudança de URL utilizando o trait Emitter
+            let _ = app_handle.emit("webview-url-change", (id_clone.clone(), url.to_string()));
+            let _ = start_event_app.emit("webview-load-started", start_event_id.clone());
             true
         })
         .on_document_title_changed(move |_webview, title| {
-            title_event_app
-                .emit("webview-title-change", (title_event_id.clone(), title))
-                .ok();
+            let _ = title_event_app.emit("webview-title-change", (title_event_id.clone(), title));
         })
         .on_page_load(move |_webview, payload| {
-            load_event_app
-                .emit("webview-load-finished", payload.url().to_string())
-                .ok();
+            let _ = finish_event_app.emit(
+                "webview-load-finished",
+                (finish_event_id.clone(), payload.url().to_string()),
+            );
         });
 
     let parent_window = window.as_ref().window();
-    parent_window.add_child(
-        webview_builder,
-        tauri::LogicalPosition::new(0.0, 0.0),
-        tauri::LogicalSize::new(0.0, 0.0),
-    ).map_err(|e| format!("Falha ao criar Webview: {}", e))?;
+    parent_window
+        .add_child(
+            webview_builder,
+            tauri::LogicalPosition::new(0.0, 0.0),
+            tauri::LogicalSize::new(0.0, 0.0),
+        )
+        .map_err(|e| format!("Falha ao criar Webview: {}", e))?;
+
+    let _ = app.emit("webview-load-started", id);
 
     Ok(())
 }
@@ -97,19 +97,26 @@ pub async fn reposition_webview(
     height: f64,
 ) -> Result<(), String> {
     if let Some(webview) = app_handle.get_webview(&id) {
-        webview.set_bounds(tauri::Rect {
-            position: tauri::PhysicalPosition {
-                x: x as i32,
-                y: y as i32,
-            }.into(),
-            size: tauri::PhysicalSize {
-                width: width as u32,
-                height: height as u32,
-            }.into(),
-        }).map_err(|e| e.to_string())?;
-        
-        webview.set_focus().ok();
+        webview
+            .set_bounds(tauri::Rect {
+                position: tauri::PhysicalPosition {
+                    x: x as i32,
+                    y: y as i32,
+                }
+                .into(),
+                size: tauri::PhysicalSize {
+                    width: width.max(1.0) as u32,
+                    height: height.max(1.0) as u32,
+                }
+                .into(),
+            })
+            .map_err(|e| e.to_string())?;
+
+        if width > 1.0 && height > 1.0 {
+            webview.set_focus().ok();
+        }
     }
+
     Ok(())
 }
 
@@ -120,23 +127,61 @@ pub async fn update_webview_url(
     url: String,
 ) -> Result<(), String> {
     if let Some(webview) = app_handle.get_webview(&id) {
-        let webview_url = if url.starts_with("http") {
-            url.parse().map_err(|e| format!("URL inválida: {}", e))?
-        } else {
-            format!("https://{}", url).parse().map_err(|e| format!("URL inválida: {}", e))?
-        };
+        let webview_url = resolve_external_url(&url)?;
         webview.navigate(webview_url).map_err(|e| e.to_string())?;
-        
-        // Ativando flag de carregando no frontend
-        app_handle.emit("webview-load-started", id).ok();
+        let _ = app_handle.emit("webview-load-started", id);
     }
+
     Ok(())
 }
 
 #[tauri::command]
+pub async fn go_back_webview(app_handle: AppHandle, id: String) -> Result<(), String> {
+    run_history_script(&app_handle, &id, "window.history.back();")
+}
+
+#[tauri::command]
+pub async fn go_forward_webview(app_handle: AppHandle, id: String) -> Result<(), String> {
+    run_history_script(&app_handle, &id, "window.history.forward();")
+}
+
+#[tauri::command]
+pub async fn reload_webview(app_handle: AppHandle, id: String) -> Result<(), String> {
+    run_history_script(&app_handle, &id, "window.location.reload();")
+}
+
+#[tauri::command]
 pub async fn close_webview(app_handle: AppHandle, id: String) -> Result<(), String> {
+    println!("[KeepCalm] Comando Rust: Fechando aba {}", id);
     if let Some(webview) = app_handle.get_webview(&id) {
         webview.close().map_err(|e| e.to_string())?;
     }
+
     Ok(())
+}
+
+fn run_history_script(app_handle: &AppHandle, id: &str, script: &str) -> Result<(), String> {
+    if let Some(webview) = app_handle.get_webview(id) {
+        let _ = app_handle.emit("webview-load-started", id.to_string());
+        webview.eval(script).map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+fn resolve_webview_url(url: &str) -> WebviewUrl {
+    match resolve_external_url(url) {
+        Ok(value) => WebviewUrl::External(value),
+        Err(_) => WebviewUrl::External("https://duckduckgo.com/".parse().unwrap()),
+    }
+}
+
+fn resolve_external_url(url: &str) -> Result<url::Url, String> {
+    if url.starts_with("http://") || url.starts_with("https://") {
+        url.parse().map_err(|e| format!("URL invalida: {}", e))
+    } else {
+        format!("https://{}", url)
+            .parse()
+            .map_err(|e| format!("URL invalida: {}", e))
+    }
 }

@@ -7,11 +7,15 @@ import logo from '../assets/logo.png';
 
 import { useTabStore } from '../store/useTabStore';
 
-const HeaderBar: React.FC = () => {
+interface HeaderBarProps {
+  onTogglePrivacyPanel?: () => void;
+}
+
+const HeaderBar: React.FC<HeaderBarProps> = ({ onTogglePrivacyPanel }) => {
   const [appWindow, setAppWindow] = useState<any>(null);
   const [focused, setFocused] = useState(false);
   
-  const { tabs, activeTabId, setActiveTab, addTab, removeTab, navigate } = useTabStore();
+  const { tabs, activeTabId, setActiveTab, addTab, removeTab, navigate, navigateBack, navigateForward } = useTabStore();
   const activeTab = tabs.find(t => t.id === activeTabId);
   const [url, setUrl] = useState(activeTab?.url || '');
 
@@ -23,8 +27,12 @@ const HeaderBar: React.FC = () => {
   }, [activeTabId, activeTab?.url]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
-      setAppWindow(getCurrentWindow());
+    // No Tauri v2, tentamos obter a janela diretamente
+    try {
+      const win = getCurrentWindow();
+      setAppWindow(win);
+    } catch (e) {
+      console.error("Falha ao obter janela Tauri:", e);
     }
   }, []);
 
@@ -35,9 +43,26 @@ const HeaderBar: React.FC = () => {
     }
   };
 
+  const toggleMaximize = async () => {
+    if (!appWindow) return;
+    const isMaximized = await appWindow.isMaximized();
+    if (isMaximized) {
+      await appWindow.unmaximize();
+    } else {
+      await appWindow.maximize();
+    }
+  };
+
+  const handleMouseDown = async (e: React.MouseEvent) => {
+    // Apenas inicia o arraste se não estiver clicando em botões ou inputs
+    if (appWindow && (e.target as HTMLElement).tagName !== 'BUTTON' && (e.target as HTMLElement).tagName !== 'INPUT') {
+      await appWindow.startDragging();
+    }
+  };
+
   return (
     <header
-      data-tauri-drag-region
+      onMouseDown={handleMouseDown}
       style={{
         height: '48px',
         background: 'var(--kc-bg-toolbar)',
@@ -48,44 +73,67 @@ const HeaderBar: React.FC = () => {
         userSelect: 'none',
         gap: '12px',
         flexShrink: 0,
-        zIndex: 1000
+        zIndex: 1000,
+        cursor: 'default' // Garante cursor padrão para arraste
       }}
     >
       {/* Lado Esquerdo: Marca */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', pointerEvents: 'none', minWidth: 'fit-content' }}>
-        <img src={logo} alt="Logo" style={{ width: '18px', height: '18px' }} />
+      <div 
+        data-tauri-drag-region 
+        style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 'fit-content' }}
+      >
+        <img src={logo} alt="Logo" style={{ width: '18px', height: '18px', pointerEvents: 'none' }} />
         <span style={{ 
           fontSize: '12px', 
           fontWeight: 600, 
           letterSpacing: '0.2px',
           opacity: 0.9,
           color: 'var(--kc-text-primary)',
-          whiteSpace: 'nowrap'
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none'
         }}>
           KeepCalm
         </span>
       </div>
 
       {/* Navegação Rápida */}
-      <div style={{ display: 'flex', gap: '2px' }}>
-        <button style={navBtnStyle}><ArrowLeft size={16} strokeWidth={1.5} /></button>
-        <button style={navBtnStyle}><ArrowRight size={16} strokeWidth={1.5} /></button>
+      <div style={{ display: 'flex', gap: '2px', position: 'relative', zIndex: 1001 }}>
+        <button
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={() => void navigateBack()}
+          style={navBtnStyle}
+          aria-label="Voltar"
+        >
+          <ArrowLeft size={16} strokeWidth={1.5} />
+        </button>
+        <button
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={() => void navigateForward()}
+          style={navBtnStyle}
+          aria-label="Avançar"
+        >
+          <ArrowRight size={16} strokeWidth={1.5} />
+        </button>
       </div>
 
       {/* Área Central: Abas e URL Integradas (CSD Style) */}
-      <div style={{ 
-        flex: 1, 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '4px',
-        height: '32px',
-        overflow: 'hidden'
-      }}>
+      <div 
+        data-tauri-drag-region
+        style={{ 
+          flex: 1, 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '4px',
+          height: '48px', // Aumentado para ocupar toda a altura e permitir arraste entre abas
+          overflow: 'hidden'
+        }}
+      >
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
           return (
             <div
               key={tab.id}
+              onMouseDown={(e) => e.stopPropagation()}
               onClick={() => setActiveTab(tab.id)}
               style={{
                 height: '32px',
@@ -102,11 +150,12 @@ const HeaderBar: React.FC = () => {
                 border: isActive 
                   ? `1px solid ${focused ? 'var(--kc-accent-primary)' : 'var(--kc-border-main)'}` 
                   : '1px solid transparent',
-                position: 'relative'
+                position: 'relative',
+                zIndex: 1001
               }}
             >
               {!isActive ? (
-                <span style={{ fontSize: '11px', color: 'var(--kc-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: '11px', color: 'var(--kc-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
                   {tab.title}
                 </span>
               ) : (
@@ -135,9 +184,9 @@ const HeaderBar: React.FC = () => {
               )}
               
               <button 
-                onClick={(e) => { e.stopPropagation(); removeTab(tab.id); }}
+                onClick={(e) => { e.stopPropagation(); void removeTab(tab.id); }}
                 style={{ 
-                  background: 'transparent', border: 'none', color: 'var(--kc-text-secondary)', opacity: 0.4, padding: '4px' 
+                  background: 'transparent', border: 'none', color: 'var(--kc-text-secondary)', opacity: 0.4, padding: '4px', cursor: 'pointer'
                 }}
               >
                 <X size={10} />
@@ -147,10 +196,11 @@ const HeaderBar: React.FC = () => {
         })}
         
         <button 
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={() => addTab()}
           style={{ 
             width: '28px', height: '28px', background: 'transparent', border: 'none', color: 'var(--kc-text-secondary)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, zIndex: 1001
           }}
         >
           <Plus size={16} />
@@ -158,23 +208,34 @@ const HeaderBar: React.FC = () => {
       </div>
 
       {/* Lado Direito: Ações e Controles */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', zIndex: 1001 }} onMouseDown={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', gap: '2px', marginRight: '8px' }}>
           <button style={actionBtnStyle}><Puzzle size={16} strokeWidth={1.2} /></button>
-          <button style={actionBtnStyle}><Menu size={18} strokeWidth={1.5} /></button>
+          <button 
+            style={actionBtnStyle}
+            onClick={onTogglePrivacyPanel}
+          >
+            <Menu size={18} strokeWidth={1.5} />
+          </button>
         </div>
 
         <div style={{ width: '1px', height: '16px', background: 'var(--kc-border-main)', margin: '0 4px' }} />
 
         {/* Window Controls */}
         <div style={{ display: 'flex' }}>
-          <button onClick={() => appWindow?.minimize()} style={windowBtnStyle}>
+          <button onClick={() => appWindow?.minimize()} style={windowBtnStyle} title="Minimizar">
             <Minus size={14} />
           </button>
-          <button onClick={() => appWindow?.maximize()} style={windowBtnStyle}>
+          <button onClick={toggleMaximize} style={windowBtnStyle} title="Maximizar">
             <Square size={12} />
           </button>
-          <button onClick={() => appWindow?.close()} style={closeBtnStyle}>
+          <button 
+            onClick={() => appWindow?.close()} 
+            style={closeBtnStyle} 
+            title="Fechar"
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#e81123')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >
             <X size={16} />
           </button>
         </div>
