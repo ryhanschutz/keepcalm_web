@@ -1,33 +1,40 @@
 :root {
-  /* Colors - Palette Oficial KeepCalm */
-  --kc-bg-base: #F0EDE8;       /* Fundo principal da janela (bege quente) */
-  --kc-bg-toolbar: #E4DFD8;    /* Barra de ferramentas e abas inativas */
-  --kc-bg-active: #FAFAF8;     /* Aba ativa, painéis em foco */
-  --kc-bg-sidebar: #D8D3CC;    /* Sidebar e painel lateral */
-  --kc-border-main: #AAAA99;   /* Bordas de componentes principais */
-  --kc-border-subtle: #CCCCBB; /* Bordas sutis, separadores internos */
-  --kc-accent-primary: #1A3A5C;/* Azul KeepCalm (cor da marca) */
-  --kc-accent-hover: #2E5B8A;  /* Hover de botões e links de accent */
-  --kc-accent-light: #C5D8EC;  /* Fundo de seleção, highlight de items */
-  --kc-text-primary: #1C1C1C;  /* Texto principal */
-  --kc-text-secondary: #555555;/* Texto secundário, legendas */
-  --kc-text-disabled: #999988; /* Texto desabilitado */
-  --kc-text-on-accent: #FFFFFF;/* Texto sobre fundos accent */
-  --kc-danger: #8B2020;        /* Erros, avisos críticos */
-  --kc-success: #2A6B3C;       /* Confirmações, conexão segura */
-  --kc-warning: #7A5C00;       /* Avisos, modo parcialmente protegido */
+  /* Nocturnal Safari Palette (V4.0) */
+  --kc-bg-base: #121212;      /* Fundo profundo */
+  --kc-bg-toolbar: #1E1E1E;   /* Barras e abas */
+  --kc-bg-active: #2A2A2A;    /* Aba em foco */
+  --kc-bg-hover: #252525;
+  
+  --kc-border-main: #333333;
+  --kc-border-subtle: #252525;
+  
+  --kc-accent-primary: #007AFF; /* Azul Safari Real */
+  --kc-accent-hover: #0A84FF;
+  
+  --kc-text-primary: #EBEBF5;
+  --kc-text-secondary: #8E8E93;
+  --kc-text-disabled: #48484A;
+  --kc-text-on-accent: #FFFFFF;
+  
+  --kc-danger: #FF453A;
+  --kc-success: #32D74B;
+  --kc-warning: #FF9F0A;
+
+  /* Pragmatic Geometry */
+  --kc-radius-md: 4px;        /* Design pragmático e elegante */
+  --kc-radius-sm: 2px;
+  --kc-radius-pill: 999px;
 
   /* Shadows */
-  --kc-shadow-soft: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --kc-shadow-medium: 2px 4px 12px rgba(0, 0, 0, 0.15);
+  --kc-shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --kc-shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.5);
 
   /* Typography */
-  --kc-font-ui: "Liberation Sans", "Cantarell", sans-serif;
-  --kc-font-mono: "Liberation Mono", "Fira Mono", monospace;
-  --kc-font-serif: "Palatino Linotype", "EB Garamond", serif;
+  --kc-font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", Roboto, sans-serif;
+  --kc-font-mono: "SF Mono", "Fira Code", monospace;
   
   --kc-font-size-ui: 13px;
   --kc-font-size-small: 11px;
   --kc-font-size-title: 14px;
-  --kc-line-height-ui: 1.45;
+  --kc-line-height-ui: 1.4;
 }

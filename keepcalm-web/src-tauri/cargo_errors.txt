@@ -1,0 +1,930 @@
+﻿cargo :    Compiling 
+proc-macro2 v1.0.106
+No linha:1 caractere:1
++ cargo check 2>&1 | 
+Out-File -FilePath 
+"cargo_errors.txt" 
+-Encoding ut ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (     
+  Compiling proc-macro2    
+ v1.0.106:String) [], R    
+emoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+   Compiling unicode-ident 
+v1.0.24
+   Compiling quote v1.0.45
+   Compiling cfg-if v1.0.4
+   Compiling serde v1.0.228
+   Compiling version_check 
+v0.9.5
+   Compiling serde_core 
+v1.0.228
+   Compiling zerocopy 
+v0.8.48
+   Compiling autocfg v1.5.0
+   Compiling typenum 
+v1.19.0
+   Compiling thiserror 
+v1.0.69
+    Checking windows-link 
+v0.2.1
+   Compiling syn v1.0.109
+   Compiling 
+parking_lot_core v0.9.12
+   Compiling generic-array 
+v0.14.7
+   Compiling 
+icu_properties_data v2.1.2
+   Compiling 
+icu_normalizer_data v2.1.1
+    Checking smallvec 
+v1.15.1
+    Checking memchr v2.8.0
+   Compiling getrandom 
+v0.3.4
+    Checking scopeguard 
+v1.2.0
+    Checking windows-sys 
+v0.61.2
+    Checking 
+pin-project-lite v0.2.17
+   Compiling 
+find-msvc-tools v0.1.9
+   Compiling shlex v1.3.0
+    Checking lock_api 
+v0.4.14
+   Compiling thiserror 
+v2.0.18
+    Checking once_cell 
+v1.21.4
+   Compiling convert_case 
+v0.4.0
+   Compiling getrandom 
+v0.2.17
+   Compiling ident_case 
+v1.0.1
+   Compiling jobserver 
+v0.1.34
+   Compiling rand_core 
+v0.6.4
+    Checking itoa v1.0.18
+   Compiling syn v2.0.117
+   Compiling cc v1.2.58
+   Compiling equivalent 
+v1.0.2
+   Compiling hashbrown 
+v0.16.1
+    Checking futures-core 
+v0.3.32
+   Compiling zmij v1.0.21
+   Compiling heck v0.5.0
+   Compiling winnow v1.0.1
+   Compiling libc v0.2.183
+    Checking log v0.4.29
+    Checking const-oid 
+v0.9.6
+   Compiling indexmap 
+v2.13.0
+    Checking 
+stable_deref_trait v1.2.1
+    Checking bytes v1.11.1
+    Checking crypto-common 
+v0.1.7
+    Checking futures-sink 
+v0.3.32
+   Compiling semver v1.0.27
+   Compiling siphasher 
+v1.0.2
+    Checking futures-io 
+v0.3.32
+   Compiling fnv v1.0.7
+   Compiling 
+crossbeam-utils v0.8.21
+   Compiling phf_shared 
+v0.11.3
+   Compiling num-traits 
+v0.2.19
+   Compiling rustc_version 
+v0.4.1
+    Checking slab v0.4.12
+    Checking subtle v2.6.1
+   Compiling toml_parser 
+v1.1.0+spec-1.1.0
+    Checking block-buffer 
+v0.10.4
+    Checking tracing-core 
+v0.1.36
+    Checking 
+futures-channel v0.3.32
+   Compiling strsim v0.11.1
+   Compiling libm v0.2.16
+    Checking digest v0.10.7
+    Checking futures-task 
+v0.3.32
+    Checking parking_lot 
+v0.12.5
+    Checking litemap v0.8.1
+    Checking writeable 
+v0.6.2
+    Checking byteorder 
+v1.5.0
+    Checking 
+percent-encoding v2.3.2
+   Compiling paste v1.0.15
+    Checking spin v0.9.8
+   Compiling getrandom 
+v0.4.2
+    Checking cpufeatures 
+v0.2.17
+    Checking 
+form_urlencoded v1.2.2
+   Compiling time-core 
+v0.1.8
+    Checking powerfmt 
+v0.2.0
+   Compiling synstructure 
+v0.13.2
+   Compiling darling_core 
+v0.23.0
+    Checking utf8_iter 
+v1.0.4
+   Compiling ppv-lite86 
+v0.2.21
+   Compiling num-conv 
+v0.2.1
+    Checking deranged 
+v0.5.8
+   Compiling time-macros 
+v0.2.27
+   Compiling num-integer 
+v0.1.46
+   Compiling rand_chacha 
+v0.3.1
+   Compiling rand v0.8.5
+    Checking socket2 v0.6.3
+    Checking mio v1.2.0
+   Compiling num-bigint 
+v0.4.6
+    Checking aho-corasick 
+v1.1.4
+    Checking time v0.3.47
+   Compiling serde_derive 
+v1.0.228
+   Compiling 
+zerofrom-derive v0.1.6
+   Compiling yoke-derive 
+v0.8.1
+   Compiling 
+zerovec-derive v0.11.2
+   Compiling displaydoc 
+v0.2.5
+   Compiling 
+thiserror-impl v1.0.69
+   Compiling 
+thiserror-impl v2.0.18
+   Compiling derive_more 
+v0.99.20
+   Compiling 
+tracing-attributes v0.1.31
+   Compiling 
+zeroize_derive v1.4.3
+   Compiling phf_generator 
+v0.11.3
+    Checking zerofrom 
+v0.1.6
+   Compiling futures-macro 
+v0.3.32
+    Checking zeroize v1.8.2
+    Checking yoke v0.8.1
+   Compiling darling_macro 
+v0.23.0
+   Compiling phf_macros 
+v0.11.3
+   Compiling tokio-macros 
+v2.6.1
+    Checking regex-syntax 
+v0.8.10
+    Checking zerovec 
+v0.11.5
+    Checking zerotrie 
+v0.2.3
+   Compiling darling 
+v0.23.0
+    Checking tracing 
+v0.1.44
+    Checking futures-util 
+v0.3.32
+   Compiling 
+serde_with_macros v3.18.0
+    Checking base64ct 
+v1.8.3
+    Checking tokio v1.50.0
+   Compiling 
+enum-ordinalize v3.1.15
+    Checking pem-rfc7468 
+v0.7.0
+    Checking lazy_static 
+v1.5.0
+   Compiling siphasher 
+v0.3.11
+   Compiling rustversion 
+v1.0.22
+    Checking tinystr v0.8.2
+    Checking potential_utf 
+v0.1.4
+    Checking 
+icu_collections v2.1.1
+    Checking 
+icu_locale_core v2.1.1
+   Compiling educe v0.4.23
+    Checking sha2 v0.10.9
+   Compiling getrandom 
+v0.1.16
+    Checking either v1.15.0
+   Compiling pkg-config 
+v0.3.32
+    Checking 
+regex-automata v0.4.14
+   Compiling serde_json 
+v1.0.149
+    Checking hex v0.4.3
+    Checking winapi-util 
+v0.1.11
+    Checking inout v0.1.4
+    Checking icu_provider 
+v2.1.1
+    Checking option-ext 
+v0.2.0
+    Checking 
+static_assertions v1.1.0
+   Compiling typeid v1.0.3
+   Compiling 
+icu_properties v2.1.2
+    Checking 
+icu_normalizer v2.1.1
+    Checking same-file 
+v1.0.6
+    Checking cipher v0.4.4
+   Compiling rand_core 
+v0.5.1
+   Compiling strum_macros 
+v0.26.4
+    Checking der v0.7.10
+    Checking signature 
+v2.2.0
+   Compiling 
+curve25519-dalek v4.1.3
+    Checking void v1.0.2
+   Compiling 
+windows_x86_64_msvc v0.48.5
+   Compiling dunce v1.0.5
+    Checking winnow v0.7.15
+    Checking walkdir v2.5.0
+   Compiling 
+curve25519-dalek-derive 
+v0.1.1
+    Checking idna_adapter 
+v1.2.1
+    Checking idna v1.1.0
+    Checking keccak v0.1.6
+   Compiling erased-serde 
+v0.4.10
+    Checking url v2.5.8
+   Compiling 
+num-bigint-dig v0.8.6
+    Checking retry-error 
+v0.5.4
+    Checking spki v0.7.3
+    Checking 
+futures-executor v0.3.32
+   Compiling rand_chacha 
+v0.2.2
+    Checking regex v1.12.3
+   Compiling rand_pcg 
+v0.2.1
+    Checking num-iter 
+v0.1.45
+    Checking futures 
+v0.3.32
+   Compiling phf_shared 
+v0.8.0
+    Checking pkcs8 v0.10.2
+   Compiling 
+pin-project-internal 
+v1.1.11
+   Compiling 
+proc-macro-hack 
+v0.5.20+deprecated
+   Compiling strsim v0.10.0
+   Compiling toml_datetime 
+v1.1.0+spec-1.1.0
+    Checking strum v0.26.3
+    Checking pkcs1 v0.7.5
+   Compiling darling_core 
+v0.14.4
+   Compiling rand v0.7.3
+   Compiling toml_edit 
+v0.25.8+spec-1.1.0
+    Checking 
+windows-targets v0.48.5
+    Checking merlin v3.0.0
+    Checking tor-error 
+v0.22.0
+    Checking ed25519 v2.2.3
+   Compiling phf_shared 
+v0.10.0
+   Compiling 
+new_debug_unreachable 
+v1.0.6
+   Compiling anyhow 
+v1.0.102
+    Checking fluid-let 
+v1.0.0
+   Compiling phf_generator 
+v0.10.0
+    Checking safelog v0.3.8
+    Checking windows-sys 
+v0.48.0
+    Checking ed25519-dalek 
+v2.2.0
+   Compiling 
+proc-macro-crate v3.5.0
+    Checking x25519-dalek 
+v2.0.1
+    Checking pin-project 
+v1.1.11
+    Checking rsa v0.9.10
+    Checking simple_asn1 
+v0.6.4
+    Checking sha3 v0.10.8
+    Checking ctr v0.9.2
+    Checking aes v0.8.4
+   Compiling phf_generator 
+v0.8.0
+   Compiling 
+string_cache_codegen v0.5.4
+   Compiling phf_codegen 
+v0.11.3
+   Compiling visibility 
+v0.1.1
+    Checking 
+crossbeam-queue v0.3.12
+    Checking sha1 v0.10.6
+   Compiling 
+precomputed-hash v0.1.1
+   Compiling native-tls 
+v0.2.18
+   Compiling 
+windows_x86_64_msvc v0.52.6
+   Compiling mac v0.1.1
+   Compiling phf_macros 
+v0.10.0
+   Compiling phf_codegen 
+v0.8.0
+    Checking dirs-sys 
+v0.5.0
+   Compiling futf v0.1.5
+   Compiling markup5ever 
+v0.14.1
+   Compiling strum_macros 
+v0.27.2
+   Compiling cssparser 
+v0.29.6
+    Checking schannel 
+v0.1.29
+   Compiling 
+async_executors v0.7.0
+   Compiling serde_spanned 
+v1.1.0
+   Compiling toml_datetime 
+v0.7.5+spec-1.1.0
+    Checking bitflags 
+v2.11.0
+    Checking tor-llcrypto 
+v0.22.0
+    Checking tokio-util 
+v0.7.18
+   Compiling bitflags 
+v1.3.2
+   Compiling 
+derive-deftly-macros 
+v0.14.6
+   Compiling toml_writer 
+v1.1.0+spec-1.1.0
+   Compiling dtoa v1.0.11
+   Compiling utf-8 v0.7.6
+   Compiling phf v0.10.1
+   Compiling tendril v0.4.3
+   Compiling dtoa-short 
+v0.3.5
+   Compiling darling_macro 
+v0.14.4
+    Checking dirs-sys 
+v0.4.1
+   Compiling selectors 
+v0.24.0
+    Checking dirs v6.0.0
+   Compiling string_cache 
+v0.8.9
+   Compiling uuid v1.23.0
+   Compiling itertools 
+v0.14.0
+    Checking itertools 
+v0.13.0
+    Checking serde_with 
+v3.18.0
+   Compiling darling 
+v0.14.4
+   Compiling phf v0.11.3
+   Compiling ctor v0.2.9
+   Compiling derive_builder
+_core_fork_arti v0.11.2
+   Compiling blanket v0.3.0
+   Compiling 
+cssparser-macros v0.6.1
+   Compiling indexmap 
+v1.9.3
+   Compiling unic-common 
+v0.9.0
+   Compiling toml 
+v0.9.12+spec-1.1.0
+   Compiling 
+unic-char-range v0.9.0
+   Compiling camino v1.2.2
+   Compiling 
+alloc-no-stdlib v2.0.4
+   Compiling nodrop v0.1.14
+   Compiling matches 
+v0.1.10
+   Compiling strum v0.27.2
+   Compiling alloc-stdlib 
+v0.2.2
+   Compiling servo_arc 
+v0.2.0
+   Compiling 
+unic-char-property v0.9.0
+   Compiling derive_builder
+_macro_fork_arti v0.11.2
+   Compiling 
+unic-ucd-version v0.9.0
+    Checking 
+async-native-tls v0.5.0
+   Compiling phf v0.8.0
+   Compiling fxhash v0.2.1
+    Checking serde_spanned 
+v0.6.9
+    Checking toml_datetime 
+v0.6.11
+   Compiling match_token 
+v0.1.0
+   Compiling async-trait 
+v0.1.89
+    Checking coarsetime 
+v0.1.37
+   Compiling 
+serde_derive_internals 
+v0.29.1
+   Compiling amplify_syn 
+v2.0.1
+   Compiling uncased 
+v0.9.10
+   Compiling hashbrown 
+v0.12.3
+    Checking atomic v0.5.3
+   Compiling schemars 
+v0.8.22
+    Checking humantime 
+v2.3.0
+    Checking toml_write 
+v0.1.2
+    Checking postage v0.5.0
+    Checking toml_edit 
+v0.22.27
+   Compiling html5ever 
+v0.29.1
+   Compiling 
+amplify_derive v4.0.1
+    Checking tor-rtcompat 
+v0.22.0
+    Checking 
+derive_builder_fork_arti 
+v0.11.2
+   Compiling 
+schemars_derive v0.8.22
+    Checking 
+tor-basic-utils v0.22.0
+   Compiling 
+unic-ucd-ident v0.9.0
+   Compiling 
+brotli-decompressor v5.0.0
+   Compiling cfb v0.7.3
+    Checking dirs v5.0.1
+    Checking tor-bytes 
+v0.22.0
+   Compiling jsonptr v0.6.3
+   Compiling 
+cargo-platform v0.1.9
+   Compiling ahash v0.8.12
+   Compiling figment 
+v0.10.19
+    Checking filetime 
+v0.2.27
+    Checking windows-link 
+v0.1.3
+   Compiling dyn-clone 
+v1.0.20
+    Checking ascii v1.1.0
+   Compiling crc32fast 
+v1.5.0
+    Checking amplify_num 
+v0.5.3
+    Checking toml v0.8.23
+   Compiling infer v0.19.0
+   Compiling brotli v8.0.2
+   Compiling json-patch 
+v3.0.1
+   Compiling 
+cargo_metadata v0.19.2
+   Compiling urlpattern 
+v0.3.0
+    Checking fs-mistrust 
+v0.7.13
+   Compiling kuchikiki 
+v0.8.8-speedreader
+   Compiling 
+serde-untagged v0.1.9
+   Compiling http v1.4.0
+    Checking amplify v4.9.0
+    Checking ordered-float 
+v2.10.1
+    Checking caret v0.4.7
+   Compiling glob v0.3.3
+    Checking derive-deftly 
+v0.14.6
+    Checking serde-value 
+v0.7.0
+    Checking notify v6.1.1
+    Checking shellexpand 
+v3.1.2
+    Checking directories 
+v5.0.1
+   Compiling vswhom-sys 
+v0.1.3
+    Checking serde_ignored 
+v0.1.14
+   Compiling 
+windows-targets v0.52.6
+    Checking 
+windows-result v0.3.4
+    Checking 
+windows-strings v0.4.2
+    Checking tor-units 
+v0.22.0
+   Compiling 
+windows-interface v0.59.3
+   Compiling 
+windows-implement v0.60.2
+    Checking tor-config 
+v0.22.0
+   Compiling vcpkg v0.2.15
+   Compiling windows-sys 
+v0.59.0
+    Checking tor-protover 
+v0.22.0
+    Checking tor-checkable 
+v0.22.0
+    Checking by_address 
+v1.2.1
+    Checking 
+oneshot-fused-workaround 
+v0.1.0
+    Checking weak-table 
+v0.3.2
+    Checking tor-cert 
+v0.22.0
+    Checking 
+windows-threading v0.1.0
+    Checking matchers 
+v0.2.0
+    Checking sharded-slab 
+v0.1.7
+    Checking nu-ansi-term 
+v0.50.3
+    Checking tracing-log 
+v0.2.0
+   Compiling slotmap v1.1.1
+    Checking windows-core 
+v0.61.2
+    Checking thread_local 
+v1.1.9
+   Compiling vswhom v0.1.0
+   Compiling radium v0.7.0
+    Checking tor-linkspec 
+v0.22.0
+    Checking 
+tor-async-utils v0.22.0
+   Compiling cargo_toml 
+v0.22.3
+   Compiling 
+num_enum_derive v0.7.6
+   Compiling zstd-sys 
+v2.0.16+zstd.1.5.7
+    Checking tinystr v0.7.6
+   Compiling 
+tracing-test-macro v0.2.6
+    Checking 
+tracing-subscriber v0.3.23
+   Compiling tauri-utils 
+v2.8.3
+   Compiling winapi v0.3.9
+    Checking tap v1.0.1
+   Compiling simd-adler32 
+v0.3.9
+    Checking wyz v0.5.1
+    Checking 
+windows-numerics v0.2.0
+    Checking tor-cell 
+v0.22.0
+    Checking 
+windows-future v0.2.1
+    Checking 
+windows-collections v0.2.0
+   Compiling 
+webview2-com-sys v0.38.2
+    Checking 
+priority-queue v2.7.0
+    Checking num_enum 
+v0.7.6
+    Checking windows 
+v0.61.3
+    Checking hmac v0.12.1
+   Compiling adler2 v2.0.1
+    Checking 
+raw-window-handle v0.6.2
+    Checking 
+typed-index-collections 
+v3.5.0
+   Compiling 
+windows_x86_64_msvc v0.53.1
+    Checking funty v2.0.0
+    Checking tor-netdoc 
+v0.22.0
+    Checking tracing-test 
+v0.2.6
+   Compiling miniz_oxide 
+v0.8.9
+    Checking hkdf v0.12.4
+    Checking 
+tor-log-ratelim v0.22.0
+    Checking bitvec v1.0.1
+    Checking tor-rtmock 
+v0.22.0
+   Compiling winreg v0.55.0
+    Checking 
+asynchronous-codec v0.7.0
+   Compiling 
+embed-resource v3.0.8
+   Compiling liblzma-sys 
+v0.4.5
+   Compiling tauri-winres 
+v0.3.5
+    Checking dpi v0.1.2
+    Checking tor-netdir 
+v0.22.0
+   Compiling cmake v0.1.58
+   Compiling cookie v0.18.1
+   Compiling zstd-safe 
+v7.2.4
+    Checking 
+allocator-api2 v0.2.21
+   Compiling fs_extra 
+v1.3.0
+   Compiling flate2 v1.1.9
+    Checking fslock v0.2.1
+   Compiling aws-lc-sys 
+v0.39.1
+    Checking hashbrown 
+v0.14.5
+   Compiling fdeflate 
+v0.3.7
+   Compiling 
+libsqlite3-sys v0.28.0
+    Checking 
+sanitize-filename v0.5.0
+   Compiling 
+webview2-com-macros v0.8.1
+    Checking 
+windows-version v0.1.7
+    Checking 
+unicode-segmentation 
+v1.13.2
+   Compiling 
+minimal-lexical v0.2.1
+   Compiling httparse 
+v1.10.1
+   Compiling nom v7.1.3
+    Checking hashlink 
+v0.9.1
+    Checking tor-proto 
+v0.22.0
+    Checking tor-persist 
+v0.22.0
+   Compiling png v0.17.16
+   Compiling tauri-build 
+v2.5.6
+   Compiling tauri-plugin 
+v2.5.4
+    Checking 
+windows-targets v0.53.5
+   Compiling 
+concurrent-queue v2.5.0
+    Checking 
+tor-socksproto v0.22.0
+    Checking 
+crossbeam-channel v0.5.15
+    Checking parking v2.2.1
+   Compiling wry v0.54.4
+   Compiling 
+unicode_categories v0.1.1
+   Compiling crc-catalog 
+v2.4.0
+   Compiling tauri-runtime 
+v2.10.1
+   Compiling crc v3.4.0
+   Compiling sqlformat 
+v0.2.6
+   Compiling 
+event-listener v5.4.1
+    Checking tor-chanmgr 
+v0.22.0
+   Compiling tokio-stream 
+v0.1.18
+    Checking windows-sys 
+v0.60.2
+   Compiling ico v0.5.0
+    Checking zstd v0.13.3
+    Checking 
+tor-relay-selection v0.22.0
+   Compiling 
+futures-intrusive v0.5.0
+    Checking 
+humantime-serde v1.1.1
+   Compiling atoi v2.0.0
+   Compiling ryu v1.0.23
+   Compiling aws-lc-rs 
+v1.16.2
+   Compiling 
+tauri-runtime-wry v2.10.1
+   Compiling base64 v0.22.1
+    Checking 
+compression-core v0.4.31
+    Checking httpdate 
+v1.0.3
+    Checking downcast-rs 
+v1.2.1
+   Compiling tauri-codegen 
+v2.5.5
+   Compiling 
+serde_urlencoded v0.7.1
+   Compiling flume v0.11.1
+    Checking tor-guardmgr 
+v0.22.0
+   Compiling sqlx-core 
+v0.8.0
+    Checking 
+keyboard-types v0.7.0
+    Checking softbuffer 
+v0.4.8
+    Checking ssh-encoding 
+v0.2.0
+   Compiling serialize-to-j
+avascript-impl v0.1.2
+   Compiling fastrand 
+v2.3.0
+    Checking 
+bounded-vec-deque v0.1.1
+    Checking base16ct 
+v0.2.0
+    Checking 
+serialize-to-javascript 
+v0.1.2
+   Compiling tempfile 
+v3.27.0
+    Checking sec1 v0.7.3
+    Checking tor-circmgr 
+v0.22.0
+    Checking 
+window-vibrancy v0.6.0
+    Checking ssh-cipher 
+v0.2.0
+    Checking muda v0.17.1
+    Checking http-body 
+v1.0.1
+   Compiling serde_repr 
+v0.1.20
+    Checking data-encoding 
+v2.10.0
+    Checking try-lock 
+v0.2.5
+    Checking mime v0.3.17
+    Checking atomic-waker 
+v1.1.2
+    Checking fallible-strea
+ming-iterator v0.1.9
+   Compiling dotenvy 
+v0.15.7
+    Checking 
+fallible-iterator v0.3.0
+    Checking h2 v0.4.13
+    Checking tor-hscrypto 
+v0.22.0
+    Checking want v0.3.1
+    Checking rusqlite 
+v0.31.0
+    Checking ssh-key v0.6.7
+    Checking open v5.3.3
+    Checking tor-consdiff 
+v0.22.0
+    Checking 
+rustls-pki-types v1.14.0
+   Compiling sqlx-sqlite 
+v0.8.0
+    Checking 
+windows-result v0.4.1
+    Checking 
+windows-strings v0.5.1
+    Checking arrayvec 
+v0.7.6
+   Compiling rustls 
+v0.23.37
+    Checking inventory 
+v0.3.24
+    Checking memmap2 
+v0.9.10
+    Checking untrusted 
+v0.9.0
+    Checking glob-match 
+v0.2.1
+    Checking 
+windows-registry v0.6.1
+    Checking tor-keymgr 
+v0.22.0
+    Checking shared_child 
+v1.1.1
+    Checking tor-ptmgr 
+v0.22.0
+    Checking os_pipe v1.2.3
+    Checking encoding_rs 
+v0.8.35
+    Checking ipnet v2.12.0
+    Checking tower-service 
+v0.3.3
+    Checking tower-layer 
+v0.3.3
+    Checking 
+hostname-validator v1.1.1
+    Checking 
+http-body-util v0.1.3
+   Compiling tauri v2.10.3
+   Compiling 
+tauri-plugin-opener v2.5.3
+   Compiling tauri-macros 
+v2.5.5
+   Compiling 
+tauri-plugin-shell v2.3.5
+   Compiling 
+sqlx-macros-core v0.8.0
+    Checking liblzma v0.4.6
+    Checking hyper v1.9.0
+    Checking 
+compression-codecs v0.4.37
+   Compiling keepcalm-web 
+v0.1.0 (C:\Users\ryhan_Schu
+tz\Documents\keepcalm_Web\k
+eepcalm_web\keepcalm-web\sr
+c-tauri)
+    Checking 
+async-compression v0.4.41
+   Compiling sqlx-macros 
+v0.8.0
+    Checking tor-dirclient 
+v0.22.0
+    Checking tor-dirmgr 
+v0.22.0
+    Checking hyper-util 
+v0.1.20
+    Checking sqlx v0.8.0
+    Checking arti-client 
+v0.22.0
+    Checking tao v0.34.8
+    Checking webview2-com 
+v0.38.2
+    Checking rustls-webpki 
+v0.103.10
+    Finished `dev` profile 
+[unoptimized + debuginfo] 
+target(s) in 1m 47s

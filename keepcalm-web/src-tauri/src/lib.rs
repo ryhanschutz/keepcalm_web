@@ -25,7 +25,25 @@ pub fn run() {
             crate::commands::tabs::update_webview_url,
             crate::commands::tabs::close_webview,
         ])
-        .setup(|_app| {
+        .setup(|app| {
+            use tauri::Manager;
+            
+            // Ativar proteção contra captura de tela no Windows (Anti-Veyon/Anti-Teams)
+            #[cfg(target_os = "windows")]
+            {
+                use windows::Win32::UI::WindowsAndMessaging::{SetWindowDisplayAffinity, WDA_EXCLUDEFROMCAPTURE};
+                use windows::Win32::Foundation::HWND;
+
+                if let Some(window) = app.get_webview_window("main") {
+                    if let Ok(hwnd) = window.hwnd() {
+                        unsafe {
+                            let _ = SetWindowDisplayAffinity(HWND(hwnd.0 as _), WDA_EXCLUDEFROMCAPTURE);
+                            println!("[KeepCalm] Proteção Anti-Capture ATIVADA com sucesso.");
+                        }
+                    }
+                }
+            }
+
             // Iniciar a detecção em segundo plano
             tauri::async_runtime::spawn(async move {
                 loop {
