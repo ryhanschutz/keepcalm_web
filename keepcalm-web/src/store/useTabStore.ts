@@ -16,6 +16,7 @@ export interface Tab {
   isLoading: boolean;
   isInternal: boolean;
   hasWebview: boolean;
+  isPdf?: boolean;
   favicon?: string;
   partition: string;
 }
@@ -220,16 +221,21 @@ export const useTabStore = create<TabState>()(
       navigate: async (input) => {
         const { activeTabId, tabs, updateTab } = get();
 
+        console.log(`[KC-DEBUG] navigate("${input}") | activeTabId=${activeTabId} | tabs=${tabs.length}`);
+
         if (!activeTabId) {
+          console.warn('[KC-DEBUG] navigate: activeTabId is null, aborting');
           return;
         }
 
         const currentTab = tabs.find((tab) => tab.id === activeTabId);
         if (!currentTab) {
+          console.warn('[KC-DEBUG] navigate: no currentTab found for', activeTabId);
           return;
         }
 
         const target = normalizeUserInput(input);
+        console.log(`[KC-DEBUG] navigate: target=${target.url} isInternal=${target.isInternal} currentTab.hasWebview=${currentTab.hasWebview}`);
 
         if (target.isInternal) {
           if (currentTab.hasWebview && isTauriRuntime()) {
@@ -246,18 +252,25 @@ export const useTabStore = create<TabState>()(
             isLoading: false,
             isInternal: true,
             hasWebview: false,
+            isPdf: false,
           });
           return;
         }
 
+        const isPdfTarget = target.url.toLowerCase().endsWith('.pdf');
+
         updateTab(currentTab.id, {
           url: target.url,
-          title: currentTab.hasWebview ? currentTab.title : 'Loading...',
-          isLoading: true,
+          title: currentTab.hasWebview && !isPdfTarget ? currentTab.title : 'Loading...',
+          isLoading: !isPdfTarget,
           isInternal: false,
+          isPdf: isPdfTarget,
         });
 
-        if (!isTauriRuntime()) {
+        if (!isTauriRuntime() || isPdfTarget) {
+          if (currentTab.hasWebview && isTauriRuntime()) {
+            try { await invoke('close_webview', { id: currentTab.id }); updateTab(currentTab.id, { hasWebview: false }); } catch (e) {}
+          }
           return;
         }
 
@@ -394,12 +407,13 @@ function createInternalTab(): Tab {
     isLoading: false,
     isInternal: true,
     hasWebview: false,
+    isPdf: false,
     partition: `tab-${id}`,
   };
 }
 
 async function ensureWebviewForTab(tab: Tab): Promise<void> {
-  if (!isTauriRuntime() || tab.isInternal) {
+  if (!isTauriRuntime() || tab.isInternal || tab.isPdf) {
     return;
   }
 

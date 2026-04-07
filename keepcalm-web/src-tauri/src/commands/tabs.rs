@@ -7,6 +7,7 @@ use std::sync::{Arc, RwLock};
 #[tauri::command]
 pub async fn create_tab_webview(
     app: AppHandle,
+    window: tauri::Window,
     id: String,
     url: String,
     _partition: String,
@@ -14,10 +15,8 @@ pub async fn create_tab_webview(
     filter_state: State<'_, Arc<RwLock<RequestFilter>>>,
 ) -> Result<(), String> {
     println!("[KeepCalm] Comando Rust: Criando aba {} -> {}", id, url);
-    let window = app
-        .get_webview_window("main")
-        .ok_or("Janela principal nao encontrada")?;
 
+    let _ = app.emit("webview-request-create", id.clone());
     let webview_url = resolve_webview_url(&url);
     let anti_fingerprint_script = crate::privacy::fingerprint::generate_override_script(&id);
     
@@ -31,15 +30,31 @@ pub async fn create_tab_webview(
     let finish_event_id = id.clone();
     let download_app = app.clone();
 
-    // Capturar o filtro global para interceptação
+    println!("[KeepCalm] Debug {}: obtendo filter_state", id);
     let filter = Arc::clone(&filter_state);
 
+    println!("[KeepCalm] Debug {}: criando builder", id);
     let mut webview_builder = WebviewBuilder::new(&id, webview_url)
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
-        .initialization_script(&anti_fingerprint_script)
-        .incognito(true);
+        .initialization_script(&anti_fingerprint_script);
 
-    if let Some(proxy_url_str) = detector.get_active_proxy().await {
+    // Injeção de bloqueadores cosméticos
+    if url.contains("youtube.com") || url.contains("youtu.be") {
+        webview_builder = webview_builder.initialization_script(crate::privacy::youtube::get_youtube_adblock_script());
+    }
+
+    let mut webview_builder = webview_builder.incognito(true);
+
+    println!("[KeepCalm] Debug {}: solicitando proxy", id);
+    // Tenta obter proxy com timeout para não bloquear a criação da aba caso
+    // o Tor ainda esteja no bootstrap (lock pode ficar preso por até 15s)
+    let proxy_url = tokio::time::timeout(
+        std::time::Duration::from_millis(500),
+        detector.get_active_proxy()
+    ).await.unwrap_or(None);
+
+    println!("[KeepCalm] Debug {}: proxy resolvido", id);
+    if let Some(proxy_url_str) = proxy_url {
         if let Ok(proxy_url) = proxy_url_str.parse() {
             webview_builder = webview_builder.proxy_url(proxy_url);
         }
@@ -94,14 +109,23 @@ pub async fn create_tab_webview(
             }
         });
 
-    let parent_window = window.as_ref().window();
-    parent_window
-        .add_child(
-            webview_builder,
-            tauri::LogicalPosition::new(0.0, 0.0),
-            tauri::LogicalSize::new(0.0, 0.0),
-        )
-        .map_err(|e| format!("Falha ao criar Webview: {}", e))?;
+    println!("[KeepCalm] Comando Rust: Webview builder configurado. Iniciando add_child para {}", id);
+    let result = window.add_child(
+        webview_builder,
+        tauri::LogicalPosition::new(0.0, 0.0),
+        tauri::LogicalSize::new(0.0, 0.0),
+    );
+
+    match result {
+        Ok(_) => {
+            println!("[KeepCalm] Comando Rust: Webview {} criada com sucesso como child de main.", id);
+        }
+        Err(e) => {
+            let err_msg = format!("Falha ao criar Webview: {}", e);
+            eprintln!("[KeepCalm] Comando Rust: {}", err_msg);
+            return Err(err_msg);
+        }
+    }
 
     let _ = app.emit("webview-load-started", id);
 
@@ -147,10 +171,18 @@ pub async fn update_webview_url(
     id: String,
     url: String,
 ) -> Result<(), String> {
-    if let Some(webview) = app_handle.get_webview(&id) {
-        let webview_url = resolve_external_url(&url)?;
-        webview.navigate(webview_url).map_err(|e| e.to_string())?;
-        let _ = app_handle.emit("webview-load-started", id);
+    println!("[KeepCalm] Comando Rust: Atualizando URL da aba {} para {}", id, url);
+
+    match app_handle.get_webview(&id) {
+        Some(webview) => {
+            println!("[KeepCalm] Comando Rust: Webview {} encontrado. Navegando...", id);
+            let webview_url = resolve_external_url(&url)?;
+            webview.navigate(webview_url).map_err(|e| e.to_string())?;
+            let _ = app_handle.emit("webview-load-started", id);
+        }
+        None => {
+            eprintln!("[KeepCalm] ERRO Rust: Tentou navegar em uma URL mas o Webview {} NAO existe ou foi perdido!", id);
+        }
     }
 
     Ok(())

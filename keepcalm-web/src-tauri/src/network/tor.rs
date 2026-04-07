@@ -31,17 +31,20 @@ impl TorLayer {
     }
 
     async fn get_or_init_client(&self) -> Result<TorClient<PreferredRuntime>> {
-        let mut client_lock = self.client.lock().await;
-        if let Some(client) = &*client_lock {
-            return Ok(client.clone());
-        }
+        // Primeiro: verificar se já existe cliente sem segurar o lock por muito tempo
+        {
+            let client_lock = self.client.lock().await;
+            if let Some(client) = &*client_lock {
+                return Ok(client.clone());
+            }
+        } // lock liberado aqui
 
+        // Construir config sem o lock
         let mut config_builder = TorClientConfig::builder();
 
         if self.use_bridges {
-            let bridges = self.bridges.lock().await;
+            let bridges = self.bridges.lock().await.clone(); // clone e libera o lock
             
-            // Log for debugging
             println!("[KeepCalm] Configurando {} bridges...", bridges.len());
             
             if bridges.is_empty() {
@@ -54,8 +57,6 @@ impl TorLayer {
                 }
             }
 
-            // Nota Crítica: obfs4 requer obfs4proxy.exe no PATH. 
-            // Se não houver o binário, o bootstrap falhará.
             config_builder.address_filter().allow_onion_addrs(true);
         }
 
@@ -65,16 +66,19 @@ impl TorLayer {
             .create_unbootstrapped()?;
         
         let timeout_duration = if self.use_bridges {
-            Duration::from_secs(45) // Bridges demoram mais
+            Duration::from_secs(45)
         } else {
             Duration::from_secs(15)
         };
 
         println!("[KeepCalm] Iniciando bootstrap (Timeout: {:?})...", timeout_duration);
         
+        // Bootstrap acontece SEM o lock — outros podem chamar get_proxy_url normalmente
         match tokio::time::timeout(timeout_duration, client.bootstrap()).await {
             Ok(Ok(_)) => {
                 println!("[KeepCalm] Bootstrap com sucesso.");
+                // Só agora readquire o lock para salvar o cliente
+                let mut client_lock = self.client.lock().await;
                 *client_lock = Some(client.clone());
                 Ok(client)
             }

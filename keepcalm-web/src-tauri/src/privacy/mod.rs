@@ -4,6 +4,7 @@ use tokio::sync::RwLock;
 
 pub mod fingerprint;
 pub mod request_filter;
+pub mod youtube;
 
 pub struct PrivacyManager {
     pub filter: request_filter::RequestFilter,

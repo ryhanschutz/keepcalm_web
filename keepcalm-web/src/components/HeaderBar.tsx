@@ -49,10 +49,12 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ onTogglePrivacyPanel }) => {
     }
   }, []);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      navigate(url);
-      (e.target as HTMLInputElement).blur();
+      const value = (e.target as HTMLInputElement).value.trim();
+      if (value) {
+        void navigate(value);
+      }
     }
   };
 

@@ -1,0 +1,9 @@
+   Compiling keepcalm-web v0.1.0 (C:\Users\ryhan_Schutz\Documents\keepcalm_Web\keepcalm_web\keepcalm-web\src-tauri)
+error[E0599]: no method named `as_ref` found for struct `tauri::Window<R>` in the current scope
+   --> src\commands\tabs.rs:107:32
+    |
+107 |     let parent_window = window.as_ref().window();
+    |                                ^^^^^^ method not found in `tauri::Window`
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `keepcalm-web` (lib) due to 1 previous error
