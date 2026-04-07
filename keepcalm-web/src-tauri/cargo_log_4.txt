@@ -1,0 +1,54 @@
+﻿cargo :     Checking 
+keepcalm-web v0.1.0 (C:
+\Users\ryhan_Schutz\Doc
+uments\keepcalm_Web\kee
+pcalm_web\keepcalm-web\
+src-tauri)
+No linha:1 caractere:1
++ cargo check 2>&1 | 
+Out-File -FilePath 
+cargo_log_4.txt 
+-Encoding utf8
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : 
+NotSpecified:     (    
+Checking ke...-    
+web\src-tauri):Strin   
+ g) [], RemoteExcepti  
+  on
+    + 
+FullyQualifiedErro    
+rId : NativeCommandE   
+ rror
+ 
+warning: value 
+assigned to 
+`download_id` is never 
+read
+  --> src\commands\tabs
+.rs:78:35
+   |
+78 |             let 
+mut download_id = 
+String::new();
+   |                   
+                
+^^^^^^^^^^^^^
+   |
+   = help: maybe it is 
+overwritten before 
+being read?
+   = note: `#[warn(unus
+ed_assignments)]` 
+(part of 
+`#[warn(unused)]`) on 
+by default
+
+warning: 
+`keepcalm-web` (lib) 
+generated 1 warning
+    Finished `dev` 
+profile [unoptimized + 
+debuginfo] target(s) 
+in 3.13s

@@ -28,7 +28,7 @@ hyper = { version = "1", features = ["full"] }
 hyper-util = { version = "0.1", features = ["full"] }
 http-body-util = "0.1"
 rustls = "0.23"
-arti-client = { version = "0.22", features = ["pt-client", "tokio", "static-sqlite"] }
+arti-client = { version = "0.22", features = ["pt-client", "bridge-client", "onion-service-client", "tokio", "static-sqlite"] }
 tor-rtcompat = { version = "0.22", features = ["tokio"] }
 async-trait = "0.1"
 aho-corasick = "1"

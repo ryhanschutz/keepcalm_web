@@ -40,6 +40,7 @@ pub fn run() {
             crate::commands::tabs::go_forward_webview,
             crate::commands::tabs::reload_webview,
             crate::commands::tabs::close_webview,
+            crate::commands::pip::create_pip_window,
         ])
         .setup(|app| {
             // Ativar proteção contra captura de tela no Windows (Anti-Capture)

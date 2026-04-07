@@ -1,4 +1,5 @@
 use tauri::{AppHandle, Manager, WebviewBuilder, WebviewUrl, Emitter, State};
+use tauri::webview::DownloadEvent;
 use crate::privacy::request_filter::{RequestFilter, RequestDecision};
 use crate::network::detector::NetworkDetector;
 use std::sync::{Arc, RwLock};
@@ -76,27 +77,18 @@ pub async fn create_tab_webview(
         .on_download(move |_webview, event| {
             let mut download_id = String::new();
             match event {
-                tauri::DownloadEvent::Requested { url, destination } => {
-                    download_id = url.clone();
-                    let filename = destination.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_else(|| "download".to_string());
+                DownloadEvent::Requested { url, destination } => {
+                    download_id = url.to_string();
+                    let filename = destination.file_name().map(|n: &std::ffi::OsStr| n.to_string_lossy().to_string()).unwrap_or_else(|| "download".to_string());
                     let _ = download_app.emit("download-started", serde_json::json!({
                         "id": download_id.clone(), 
                         "filename": filename,
                         "path": destination.to_string_lossy(),
-                        "total_size": 0
                     }));
                     true 
                 },
-                tauri::DownloadEvent::Finished { .. } => {
-                    let _ = download_app.emit("download-finished", serde_json::json!({ "id": download_id.clone() }));
-                    true
-                },
-                tauri::DownloadEvent::Progress { downloaded, total } => {
-                    let _ = download_app.emit("download-progress", serde_json::json!({
-                        "id": download_id.clone(),
-                        "downloaded": downloaded,
-                        "total": total
-                    }));
+                DownloadEvent::Finished { .. } => {
+                    let _ = download_app.emit("download-finished", serde_json::json!({ "status": "ok" }));
                     true
                 },
                 _ => true

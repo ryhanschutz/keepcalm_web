@@ -10,6 +10,7 @@ use std::time::Duration;
 pub struct TorLayer {
     client: Arc<Mutex<Option<TorClient<PreferredRuntime>>>>,
     use_bridges: bool,
+    bridges: Arc<Mutex<Vec<String>>>,
 }
 
 impl TorLayer {
@@ -17,7 +18,16 @@ impl TorLayer {
         Self {
             client: Arc::new(Mutex::new(None)),
             use_bridges,
+            bridges: Arc::new(Mutex::new(Vec::new())),
         }
+    }
+
+    pub async fn set_bridges(&self, bridges: Vec<String>) -> Result<()> {
+        let mut b = self.bridges.lock().await;
+        *b = bridges;
+        let mut client_lock = self.client.lock().await;
+        *client_lock = None;
+        Ok(())
     }
 
     async fn get_or_init_client(&self) -> Result<TorClient<PreferredRuntime>> {
@@ -26,31 +36,60 @@ impl TorLayer {
             return Ok(client.clone());
         }
 
+        let mut config_builder = TorClientConfig::builder();
+
         if self.use_bridges {
-            return Err("Modo bridge não está disponível nesta build local de testes".into());
+            let bridges = self.bridges.lock().await;
+            
+            // Log for debugging
+            println!("[KeepCalm] Configurando {} bridges...", bridges.len());
+            
+            if bridges.is_empty() {
+                return Err("Nenhuma bridge configurada".into());
+            }
+
+            for bridge_line in bridges.iter() {
+                if let Ok(bridge_cfg) = bridge_line.parse::<arti_client::config::BridgeConfigBuilder>() {
+                    config_builder.bridges().bridges().push(bridge_cfg);
+                }
+            }
+
+            // Nota Crítica: obfs4 requer obfs4proxy.exe no PATH. 
+            // Se não houver o binário, o bootstrap falhará.
+            config_builder.address_filter().allow_onion_addrs(true);
         }
 
-        let config_builder = TorClientConfig::builder();
         let config = config_builder.build()?;
-
         let client = TorClient::builder()
             .config(config)
             .create_unbootstrapped()?;
         
-        match tokio::time::timeout(Duration::from_secs(15), client.bootstrap()).await {
-            Ok(bootstrap_res) => {
-                bootstrap_res?;
+        let timeout_duration = if self.use_bridges {
+            Duration::from_secs(45) // Bridges demoram mais
+        } else {
+            Duration::from_secs(15)
+        };
+
+        println!("[KeepCalm] Iniciando bootstrap (Timeout: {:?})...", timeout_duration);
+        
+        match tokio::time::timeout(timeout_duration, client.bootstrap()).await {
+            Ok(Ok(_)) => {
+                println!("[KeepCalm] Bootstrap com sucesso.");
                 *client_lock = Some(client.clone());
                 Ok(client)
             }
+            Ok(Err(e)) => {
+                println!("[KeepCalm] Erro no bootstrap: {}", e);
+                Err(format!("Falha no bootstrap: {}", e).into())
+            }
             Err(_) => {
-                Err("Bootstrap do Tor expirou (15s)".into())
+                println!("[KeepCalm] Bootstrap expirou.");
+                Err("Bootstrap do Tor expirou".into())
             }
         }
     }
 
     pub fn get_socks_url(&self) -> String {
-        // TODO: Obter porta real do listener do Arti
         "socks5h://127.0.0.1:9150".to_string()
     }
 
