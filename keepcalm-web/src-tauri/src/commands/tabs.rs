@@ -75,10 +75,9 @@ pub async fn create_tab_webview(
             );
         })
         .on_download(move |_webview, event| {
-            let mut download_id = String::new();
             match event {
                 DownloadEvent::Requested { url, destination } => {
-                    download_id = url.to_string();
+                    let download_id = url.to_string();
                     let filename = destination.file_name().map(|n: &std::ffi::OsStr| n.to_string_lossy().to_string()).unwrap_or_else(|| "download".to_string());
                     let _ = download_app.emit("download-started", serde_json::json!({
                         "id": download_id.clone(), 

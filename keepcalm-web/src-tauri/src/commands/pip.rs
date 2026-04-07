@@ -1,4 +1,4 @@
-use tauri::{AppHandle, Manager, WebviewWindowBuilder, WebviewUrl, Runtime};
+use tauri::{AppHandle, WebviewWindowBuilder, WebviewUrl, Runtime};
 
 #[tauri::command]
 pub async fn create_pip_window<R: Runtime>(
@@ -13,7 +13,7 @@ pub async fn create_pip_window<R: Runtime>(
     
     println!("[KeepCalm] Criando MiniPlayer PiP: {} -> {}", title, url);
 
-    let window = WebviewWindowBuilder::new(&app, &pip_id, WebviewUrl::External(url.parse().map_err(|e| e.to_string())?))
+    let window = WebviewWindowBuilder::new(&app, &pip_id, WebviewUrl::External(url.parse::<url::Url>().map_err(|e| e.to_string())?))
         .title(&title)
         .inner_size(400.0, 225.0)
         .always_on_top(true)
