@@ -1,11 +1,14 @@
 pub mod commands;
 pub mod network;
 pub mod privacy;
+pub mod traffic;
 
 use std::sync::{Arc, RwLock};
 use crate::network::detector::NetworkDetector;
 use crate::privacy::request_filter::RequestFilter;
 use crate::privacy::PrivacyTelemetry;
+use crate::traffic::TrafficState;
+use crate::traffic::RequestStore;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -13,6 +16,7 @@ pub fn run() {
     // Inicializar estados globais
     let network_detector = Arc::new(NetworkDetector::new());
     let privacy_telemetry = Arc::new(PrivacyTelemetry::new());
+    let traffic_state = TrafficState(Arc::new(RwLock::new(RequestStore::new())));
     
     // Filtro de privacidade (adblock engine) com RwLock para acesso concorrente rápido
     let request_filter = Arc::new(RwLock::new(RequestFilter::new()));
@@ -27,6 +31,7 @@ pub fn run() {
         .manage(network_detector)
         .manage(request_filter)
         .manage(privacy_telemetry)
+        .manage(traffic_state)
         .invoke_handler(tauri::generate_handler![
             crate::commands::network::get_network_status,
             crate::commands::network::run_network_probe,
@@ -43,6 +48,10 @@ pub fn run() {
             crate::commands::pip::create_pip_window,
             crate::commands::sidecars::run_security_tool,
             crate::commands::repeater::send_repeater_request,
+            crate::traffic::capture_request,
+            crate::traffic::capture_response,
+            crate::traffic::get_traffic_list,
+            crate::traffic::clear_traffic,
         ])
         .setup(|app| {
             // Ativar proteção contra captura de tela no Windows (Anti-Capture)

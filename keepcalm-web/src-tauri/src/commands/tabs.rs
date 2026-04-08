@@ -13,6 +13,7 @@ pub async fn create_tab_webview(
     _partition: String,
     detector: State<'_, Arc<NetworkDetector>>,
     filter_state: State<'_, Arc<RwLock<RequestFilter>>>,
+    traffic_state: State<'_, crate::traffic::TrafficState>,
 ) -> Result<(), String> {
     println!("[KeepCalm] Comando Rust: Criando aba {} -> {}", id, url);
 
@@ -32,10 +33,14 @@ pub async fn create_tab_webview(
 
     println!("[KeepCalm] Debug {}: obtendo filter_state", id);
     let filter = Arc::clone(&filter_state);
+    let traffic_arc = traffic_state.inner().0.clone();
+
+    const TRAFFIC_INTERCEPTOR: &str = include_str!("../../../src/utils/interceptor.js");
 
     println!("[KeepCalm] Debug {}: criando builder", id);
     let mut webview_builder = WebviewBuilder::new(&id, webview_url)
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+        .initialization_script(TRAFFIC_INTERCEPTOR)
         .initialization_script(&anti_fingerprint_script);
 
     // Injeção de bloqueadores cosméticos
@@ -46,8 +51,7 @@ pub async fn create_tab_webview(
     let mut webview_builder = webview_builder.incognito(true);
 
     println!("[KeepCalm] Debug {}: solicitando proxy", id);
-    // Tenta obter proxy com timeout para não bloquear a criação da aba caso
-    // o Tor ainda esteja no bootstrap (lock pode ficar preso por até 15s)
+    // Tenta obter proxy com timeout para não bloquear a criação da aba
     let proxy_url = tokio::time::timeout(
         std::time::Duration::from_millis(500),
         detector.get_active_proxy()
@@ -60,15 +64,59 @@ pub async fn create_tab_webview(
         }
     }
 
-    // Interceptação Nativa (Fase 2): Filtro de Recursos (Scripts, Imagens, etc.)
+    // Interceptação Nativa (Fase 2): Filtro e Captura
+    let app_for_capture = app.clone();
     let webview_builder = webview_builder.on_web_resource_request(move |request, response| {
         let uri = request.uri().to_string();
         
+        // Bloqueio
         if let Ok(filter_guard) = filter.read() {
-            // Deref explícito para evitar confusão de métodos do Guard
             if let RequestDecision::Block = (*filter_guard).decide(&uri, "", "other") {
-                println!("[KeepCalm] Bloqueando recurso invasivo: {}", uri);
                 *response.status_mut() = tauri::http::StatusCode::FORBIDDEN;
+                return;
+            }
+        }
+
+        // Captura Nativa (Capturamos metadados e headers no Rust)
+        if !uri.starts_with("tauri://") && !uri.starts_with("ipc:") {
+            let req_headers: Vec<(String, String)> = request.headers().iter()
+                .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
+                .collect();
+
+            let res_headers: Vec<(String, String)> = response.headers().iter()
+                .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
+                .collect();
+
+            let http_req = crate::traffic::models::HttpRequest {
+                method: request.method().to_string(),
+                url: uri,
+                headers: req_headers,
+                body: crate::traffic::models::BodyContent::Empty, // Nativo não captura corpo POST facilmente sem ler stream
+            };
+
+            let http_res = crate::traffic::models::HttpResponse {
+                status: response.status().as_u16(),
+                headers: res_headers,
+                body: crate::traffic::models::BodyContent::Empty,
+            };
+
+            let tx_id = uuid::Uuid::new_v4().to_string();
+            let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis() as u64;
+
+            let tx = crate::traffic::models::HttpTransaction {
+                id: tx_id,
+                hash: String::new(),
+                request: http_req,
+                response: Some(http_res),
+                timestamp,
+                size: 0,
+                truncated: false,
+                tags: vec!["native".to_string()],
+            };
+
+            if let Ok(mut store) = traffic_arc.write() {
+                store.add(tx);
+                let _ = app_for_capture.emit("traffic-updated", ());
             }
         }
     });

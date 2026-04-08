@@ -253,6 +253,8 @@ export const useTabStore = create<TabState>()(
         if (target.isInternal) {
           if (currentTab.hasWebview && isTauriRuntime()) {
             try {
+              // Wait for the native webview to be destroyed before updating state
+              // This prevents the "ghosting" issue where the webview stays visible
               await invoke('close_webview', { id: currentTab.id });
             } catch (error) {
               console.error('Failed to close webview before showing start page:', error);

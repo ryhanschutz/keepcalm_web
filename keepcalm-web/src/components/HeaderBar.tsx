@@ -254,7 +254,7 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ onTogglePrivacyPanel, onToggleSec
             <Shield size={18} strokeWidth={1.5} />
           </button>
           <button 
-            style={{...actionBtnStyle, color: 'var(--kc-accent-primary)'}}
+            style={actionBtnStyle}
             onClick={onToggleSecurityLab}
             title="Security Lab"
           >

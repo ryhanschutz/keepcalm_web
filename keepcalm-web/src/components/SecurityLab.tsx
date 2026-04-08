@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Terminal, Search, Copy, Play, Zap, ShieldAlert, Cpu } from 'lucide-react';
+import { X, Terminal, Play, Activity, Database, Shield, Send, Search, Trash2 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { useTabStore } from '../store/useTabStore';
@@ -16,13 +16,35 @@ interface ToolOutput {
   code?: number;
 }
 
+interface HttpTransaction {
+  id: String;
+  hash: string;
+  request: {
+    method: string;
+    url: string;
+    headers: [string, string][];
+    body: { type: string, data?: string };
+  };
+  response?: {
+    status: number;
+    headers: [string, string][];
+    body: { type: string, data?: string };
+  };
+  timestamp: number;
+  tags: string[];
+}
+
 export const SecurityLab: React.FC<SecurityLabProps> = ({ isOpen, onClose }) => {
-  const [activeSegment, setActiveSegment] = useState<'recon' | 'audit' | 'payloads' | 'repeater'>('recon');
+  const [activeSegment, setActiveSegment] = useState<'traffic' | 'recon' | 'audit' | 'repeater'>('traffic');
   const [nucleiLogs, setNucleiLogs] = useState<string[]>([]);
   const [reconResults, setReconResults] = useState<{label: string, value: string}[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [isReconRunning, setIsReconRunning] = useState(false);
   
+  const [transactions, setTransactions] = useState<HttpTransaction[]>([]);
+  const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
   const [repeaterRaw, setRepeaterRaw] = useState<string>('');
   const [repeaterResponse, setRepeaterResponse] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -37,12 +59,25 @@ export const SecurityLab: React.FC<SecurityLabProps> = ({ isOpen, onClose }) => 
     try { return new URL(activeTab.url).hostname; } catch { return ''; }
   }, [activeTab]);
 
+  const refreshTraffic = async () => {
+    try {
+      const list = await invoke<HttpTransaction[]>('get_traffic_list');
+      setTransactions([...list].reverse()); // Newest first
+    } catch (e) {
+      console.error('Failed to get traffic:', e);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) return;
+    refreshTraffic();
 
-    const unlisten = listen<any>('security-tool-output', (event) => {
+    const unlistenTraffic = listen('traffic-updated', () => {
+      refreshTraffic();
+    });
+
+    const unlistenOutput = listen<any>('security-tool-output', (event) => {
       const payload: ToolOutput = event.payload;
-      
       if (payload.tool === 'nuclei') {
         if (payload.type === 'stdout' || payload.type === 'stderr') {
           setNucleiLogs(prev => [...prev.slice(-100), payload.content || '']);
@@ -72,7 +107,8 @@ export const SecurityLab: React.FC<SecurityLabProps> = ({ isOpen, onClose }) => 
     });
 
     return () => {
-      void unlisten.then(fn => fn());
+      void unlistenTraffic.then(fn => fn());
+      void unlistenOutput.then(fn => fn());
     };
   }, [isOpen]);
 
@@ -112,6 +148,21 @@ export const SecurityLab: React.FC<SecurityLabProps> = ({ isOpen, onClose }) => 
     }
   };
 
+  const clearTraffic = async () => {
+    await invoke('clear_traffic');
+    setTransactions([]);
+  };
+
+  const sendToRepeater = (tx: HttpTransaction) => {
+    const raw = `URL: ${tx.request.url}\nMethod: ${tx.request.method}\n` +
+      tx.request.headers.map(([h, v]) => `${h}: ${v}`).join('\n') +
+      '\n\n' + (tx.request.body.type === 'Text' ? tx.request.body.data : '');
+    
+    setRepeaterRaw(raw);
+    setActiveSegment('repeater');
+    setRepeaterResponse(null);
+  };
+
   const sendRepeater = async () => {
     if (!repeaterRaw) return;
     setIsSending(true);
@@ -126,21 +177,15 @@ export const SecurityLab: React.FC<SecurityLabProps> = ({ isOpen, onClose }) => 
       let isBody = false;
 
       for (let line of lines) {
-        if (isBody) { body += line + '\n'; continue; }
+        if (isBody) { body += (body ? '\n' : '') + line; continue; }
         if (line.trim() === '') { isBody = true; continue; }
         
-        if (line.match(/^[A-Z]+\s+\//)) {
-          const parts = line.split(' ');
-          method = parts[0];
-          continue;
-        }
-
         if (line.startsWith('URL:')) { url = line.replace('URL:', '').trim(); continue; }
         if (line.startsWith('Method:')) { method = line.replace('Method:', '').trim(); continue; }
 
         const hMatch = line.match(/^([\w-]+):\s*(.*)$/);
         if (hMatch) {
-          headers[hMatch[1]] = hMatch[2];
+          headers[hMatch[1].toLowerCase()] = hMatch[2];
         }
       }
 
@@ -165,318 +210,442 @@ export const SecurityLab: React.FC<SecurityLabProps> = ({ isOpen, onClose }) => 
     }
   }, [nucleiLogs]);
 
-  const copyPayload = (text: string) => {
-    void navigator.clipboard.writeText(text);
-  };
-
-  if (!isOpen) return null;
+  const selectedTx = transactions.find(t => t.id === selectedTxId);
+  const filteredTxs = transactions.filter(t => 
+    t.request.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    t.request.method.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="pp-overlay" onClick={onClose}>
-      <aside 
-        className="pp-panel security-lab-panel" 
-        onClick={e => e.stopPropagation()}
-        style={{ width: '420px', borderLeft: '1px solid var(--kc-accent-primary)' }}
-      >
-        <header className="pp-header" style={{ borderBottomColor: 'var(--kc-accent-primary)' }}>
-          <div className="pp-title" style={{ color: 'var(--kc-accent-primary)' }}>
-            <Terminal size={16} />
-            <strong>Security Lab</strong>
-          </div>
-          <button className="pp-icon-btn" onClick={onClose}><X size={14} /></button>
-        </header>
+    <aside 
+      className="security-lab-sidebar"
+      style={{
+        width: isOpen ? '400px' : '0px',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        borderLeft: isOpen ? '1px solid var(--kc-border-main)' : '0px solid transparent',
+        background: 'rgba(25, 25, 25, 0.82)',
+        backdropFilter: 'blur(24px) saturate(140%)',
+        zIndex: 5,
+        boxShadow: isOpen ? '-8px 0 32px rgba(0,0,0,0.5)' : 'none',
+        transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease',
+        position: 'relative',
+        overflow: 'hidden',
+        flexShrink: 0,
+        opacity: isOpen ? 1 : 0
+      }}
+    >
+      <header className="sec-header" style={{ 
+        padding: '14px 16px', 
+        borderBottom: '1px solid var(--kc-border-subtle)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        minWidth: '400px'
+      }}>
+        <div className="sec-title" style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '8px',
+          color: 'var(--kc-text-primary)',
+          fontSize: 'var(--kc-font-size-title)',
+          fontWeight: 600,
+          opacity: 0.9
+        }}>
+          <Terminal size={14} strokeWidth={2.5} />
+          <span style={{ letterSpacing: '-0.01em' }}>Security Lab</span>
+        </div>
+        <button 
+          onClick={onClose}
+          style={{
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid var(--kc-border-subtle)',
+            color: 'var(--kc-text-secondary)',
+            cursor: 'pointer',
+            padding: '4px',
+            borderRadius: '6px',
+            display: 'flex'
+          }}
+        >
+          <X size={14} />
+        </button>
+      </header>
 
-        <nav className="sec-nav">
+      <nav className="sec-tabs" style={{
+        display: 'flex',
+        padding: '12px 16px 8px',
+        gap: '2px',
+        minWidth: '400px'
+      }}>
+        {(['traffic', 'recon', 'audit', 'repeater'] as const).map(tab => (
           <button 
-            className={activeSegment === 'recon' ? 'active' : ''} 
-            onClick={() => setActiveSegment('recon')}
+            key={tab}
+            className={activeSegment === tab ? 'active' : ''} 
+            onClick={() => {
+              setActiveSegment(tab);
+              if (tab !== 'traffic') setSelectedTxId(null);
+            }}
+            style={{
+              flex: 1,
+              padding: '6px 4px',
+              fontSize: '11px',
+              fontWeight: 500,
+              borderRadius: '6px',
+              border: 'none',
+              background: activeSegment === tab ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+              color: activeSegment === tab ? 'var(--kc-text-primary)' : 'var(--kc-text-secondary)',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px'
+            }}
           >
-            <Search size={14} /> Recon
+            {tab === 'traffic' && <Activity size={10} />}
+            {tab === 'recon' && <Database size={10} />}
+            {tab === 'audit' && <Shield size={10} />}
+            {tab === 'repeater' && <Send size={10} />}
+            <span>{tab === 'traffic' ? 'Traffic' : tab === 'recon' ? 'Recon' : tab === 'audit' ? 'Audit' : 'Repeater'}</span>
           </button>
-          <button 
-            className={activeSegment === 'audit' ? 'active' : ''} 
-            onClick={() => setActiveSegment('audit')}
-          >
-            <ShieldAlert size={14} /> Auditoria
-          </button>
-          <button 
-            className={activeSegment === 'payloads' ? 'active' : ''} 
-            onClick={() => setActiveSegment('payloads')}
-          >
-            <Zap size={14} /> Payloads
-          </button>
-          <button 
-            className={activeSegment === 'repeater' ? 'active' : ''} 
-            onClick={() => setActiveSegment('repeater')}
-          >
-            <Copy size={12} /> Repeater
-          </button>
-        </nav>
+        ))}
+      </nav>
 
-        <main className="sec-content">
-          {activeSegment === 'recon' && (
-            <div className="sec-recon">
-              <div className="sec-card">
-                <div className="sec-card-header">
-                  <Cpu size={14} /> <strong>Stack de Tecnologia (httpx)</strong>
-                </div>
-                <div className="sec-card-body">
-                  {isReconRunning && reconResults.length === 0 ? (
-                    <p className="dim">Sondando {domain}...</p>
-                  ) : reconResults.length > 0 ? (
-                    reconResults.map((res, i) => (
-                      <div key={i} className="tech-item">
-                        <span>{res.label}:</span> <strong>{res.value}</strong>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="dim">Nenhuma tecnologia detectada.</p>
-                  )}
-                  {isReconRunning && <div className="loader-line" />}
-                </div>
+      <main className="sec-scrollarea" style={{ flex: 1, overflowY: 'auto', padding: '16px', minWidth: '400px', display: 'flex', flexDirection: 'column' }}>
+        
+        {activeSegment === 'traffic' && (
+          <div className="sec-view traffic-view" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <Search size={12} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--kc-text-muted)' }} />
+                <input 
+                  type="text" 
+                  placeholder="Filtrar requests..." 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid var(--kc-border-subtle)',
+                    borderRadius: '8px',
+                    padding: '8px 8px 8px 32px',
+                    fontSize: '11px',
+                    color: 'var(--kc-text-primary)',
+                    outline: 'none'
+                  }}
+                />
               </div>
+              <button 
+                onClick={clearTraffic}
+                style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid var(--kc-border-subtle)',
+                  borderRadius: '8px',
+                  padding: '8px 10px',
+                  color: 'var(--kc-text-secondary)',
+                  cursor: 'pointer'
+                }}
+                title="Limpar Tudo"
+              >
+                <Trash2 size={12} />
+              </button>
             </div>
-          )}
 
-          {activeSegment === 'audit' && (
-            <div className="sec-audit">
-              <div className="audit-controls">
-                <span>Alvo: <strong>{domain || 'Nenhum alvo ativo'}</strong></span>
-                <button 
-                  disabled={!domain || isScanning} 
-                  onClick={runNuclei}
-                  className="sec-btn-run"
+            <div style={{ 
+              flex: 1, 
+              background: '#0a0a0a', 
+              borderRadius: '10px', 
+              border: '1px solid var(--kc-border-main)',
+              overflowY: 'auto',
+              maxHeight: selectedTx ? '200px' : '480px',
+              transition: 'max-height 0.3s'
+            }}>
+              {filteredTxs.map((tx) => (
+                <div 
+                  key={tx.id as string} 
+                  onClick={() => setSelectedTxId(tx.id === selectedTxId ? null : (tx.id as string))}
+                  style={{
+                    padding: '10px 12px',
+                    borderBottom: '1px solid rgba(255,255,255,0.03)',
+                    cursor: 'pointer',
+                    background: selectedTxId === tx.id ? 'rgba(255,255,255,0.03)' : 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
                 >
-                  <Play size={12} fill="currentColor" /> {isScanning ? 'Scanning...' : 'Run Nuclei'}
-                </button>
-              </div>
-              <div className="audit-console" ref={scrollRef}>
-                {nucleiLogs.map((log, i) => (
-                  <div key={i} className="console-line">{log}</div>
-                ))}
-              </div>
-            </div>
-          )}
+                  <div style={{
+                    minWidth: '34px',
+                    fontSize: '9px',
+                    fontWeight: 800,
+                    color: tx.request.method === 'POST' ? 'var(--kc-accent-primary)' : 'var(--kc-text-muted)',
+                    textAlign: 'center'
+                  }}>{tx.request.method}</div>
+                  
+                  <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <div style={{ 
+                      fontSize: '11px', 
+                      color: 'var(--kc-text-primary)', 
+                      whiteSpace: 'nowrap', 
+                      overflow: 'hidden', 
+                      textOverflow: 'ellipsis' 
+                    }}>
+                      {tx.request.url.replace(/^https?:\/\//, '')}
+                    </div>
+                    <div style={{ display: 'flex', gap: '4px', marginTop: '2px' }}>
+                      {tx.tags.map(tag => (
+                        <span key={tag} style={{
+                          fontSize: '8px',
+                          padding: '1px 4px',
+                          borderRadius: '3px',
+                          background: tag === 'auth' ? 'rgba(255, 171, 0, 0.1)' : tag === 'error' ? 'rgba(255, 82, 82, 0.1)' : 'rgba(255,255,255,0.05)',
+                          color: tag === 'auth' ? '#ffab00' : tag === 'error' ? '#ff5252' : 'var(--kc-text-muted)',
+                          border: `1px solid ${tag === 'auth' ? 'rgba(255, 171, 0, 0.2)' : 'rgba(255,255,255,0.1)'}`
+                        }}>{tag}</span>
+                      ))}
+                    </div>
+                  </div>
 
-          {activeSegment === 'payloads' && (
-            <div className="sec-payloads">
-              <PayloadSection title="Cross-Site Scripting (XSS)" list={[
-                "<script>alert(1)</script>",
-                "javascript:alert(1)",
-                "<img src=x onerror=alert(1)>",
-                "\\\"><script>alert(1)</script>"
-              ]} onCopy={copyPayload} />
-              
-              <PayloadSection title="SQL Injection" list={[
-                "' OR '1'='1",
-                "admin' --",
-                "' UNION SELECT NULL,NULL,NULL--",
-                "SLEEP(5)"
-              ]} onCopy={copyPayload} />
-            </div>
-          )}
-
-          {activeSegment === 'repeater' && (
-            <div className="sec-repeater">
-              <p className="dim" style={{fontSize: '10px', marginBottom: '8px'}}>Edite a requisição abaixo no formato chave-valor ou RAW.</p>
-              <div className="repeater-layout">
-                <div className="repeater-editor">
-                  <div className="editor-header">Request Editor</div>
-                  <textarea 
-                    className="console-line mono" 
-                    value={repeaterRaw}
-                    onChange={(e) => setRepeaterRaw(e.target.value)}
-                    placeholder={`URL: https://${domain || 'example.com'}\nMethod: GET\nConnection: close\n\n[Corpo opcional]`}
-                    style={{
-                      width: '100%', 
-                      height: '150px', 
-                      background: '#000', 
-                      color: '#fff', 
-                      border: '1px solid #333', 
-                      padding: '8px', 
-                      fontSize: '11px',
-                      resize: 'none'
-                    }}
-                  />
-                  <button 
-                    className="sec-btn-run" 
-                    style={{marginTop: '8px', width: '100%'}}
-                    onClick={sendRepeater}
-                    disabled={isSending}
-                  >
-                    {isSending ? 'Sending...' : 'Send Request'}
-                  </button>
-                </div>
-                <div className="repeater-response" style={{marginTop: '12px'}}>
-                  <div className="editor-header">Response</div>
-                  <div className="audit-console" style={{height: '200px', whiteSpace: 'pre', color: '#00d0ff'}}>
-                    {repeaterResponse || 'Esperando requisição...'}
+                  <div style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: !tx.response ? 'var(--kc-text-disabled)' : tx.response.status < 300 ? '#4caf50' : tx.response.status < 400 ? '#ff9800' : '#f44336'
+                  }}>
+                    {tx.response?.status || '...'}
                   </div>
                 </div>
+              ))}
+              {filteredTxs.length === 0 && (
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--kc-text-muted)', fontSize: '11px' }}>
+                  {searchQuery ? 'Sem resultados para o filtro.' : 'Capturando tráfego em tempo real...'}
+                </div>
+              )}
+            </div>
+
+            {selectedTx && (
+              <div style={{ 
+                flex: 1, 
+                background: 'rgba(0,0,0,0.2)', 
+                border: '1px solid var(--kc-border-subtle)', 
+                borderRadius: '10px',
+                padding: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                minHeight: '260px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h4 style={{ fontSize: '10px', fontWeight: 800, color: 'var(--kc-accent-primary)' }}>MENSAGEM SELECIONADA</h4>
+                  <button 
+                    onClick={() => sendToRepeater(selectedTx)}
+                    style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid var(--kc-border-subtle)',
+                      borderRadius: '6px',
+                      padding: '4px 8px',
+                      fontSize: '10px',
+                      color: 'var(--kc-text-primary)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <Send size={10} /> Enviar ao Repeater
+                  </button>
+                </div>
+
+                <div style={{ flex: 1, overflowY: 'auto', fontFamily: 'var(--kc-font-mono)', fontSize: '10px' }}>
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ color: 'var(--kc-text-muted)', marginBottom: '4px' }}>HEADERS</div>
+                    {selectedTx.request.headers.map(([k, v]) => (
+                      <div key={k} style={{ marginBottom: '2px' }}>
+                        <span style={{ color: '#888' }}>{k}:</span> <span style={{ color: '#ccc' }}>{v}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {selectedTx.request.body.type === 'Text' && (
+                    <div style={{ marginBottom: '10px' }}>
+                      <div style={{ color: 'var(--kc-text-muted)', marginBottom: '4px' }}>BODY</div>
+                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '4px', color: '#cad3f5' }}>
+                        {selectedTx.request.body.data}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedTx.response && (
+                    <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px' }}>
+                      <div style={{ color: 'var(--kc-text-muted)', marginBottom: '4px' }}>RESPONSE ({selectedTx.response.status})</div>
+                      <div style={{ background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '4px', color: '#a5d6ff', fontSize: '9px', maxHeight: '100px', overflowY: 'auto' }}>
+                        {selectedTx.response.body.type === 'Text' ? selectedTx.response.body.data : '[Binary/Base64]'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div style={{ fontSize: '9px', color: 'var(--kc-text-muted)', textAlign: 'right', opacity: 0.6 }}>
+              {transactions.length} / 800 requisições capturadas (FIFO)
+            </div>
+          </div>
+        )}
+
+        {activeSegment === 'recon' && (
+          <div className="sec-view">
+            <h4 style={{ color: 'var(--kc-text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '12px', letterSpacing: '0.08em', fontWeight: 700 }}>
+              Stack de Tecnologia
+            </h4>
+            <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '10px', padding: '16px', border: '1px solid var(--kc-border-subtle)' }}>
+              {isReconRunning && reconResults.length === 0 ? (
+                <div style={{ color: 'var(--kc-text-secondary)', fontSize: '12px', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="loader-pulse" /> Analisando {domain}...
+                </div>
+              ) : reconResults.length > 0 ? (
+                reconResults.map((res, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px' }}>
+                    <span style={{ color: 'var(--kc-text-secondary)' }}>{res.label}</span>
+                    <strong style={{ color: 'var(--kc-text-primary)', fontWeight: 600 }}>{res.value}</strong>
+                  </div>
+                ))
+              ) : (
+                <div style={{ color: 'var(--kc-text-secondary)', fontSize: '12px', opacity: 0.6 }}>Aguardando navegação para iniciar reconhecimento.</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeSegment === 'audit' && (
+          <div className="sec-view">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--kc-text-secondary)' }}>Alvo: <strong style={{color: 'var(--kc-text-primary)'}}>{domain || 'Nenhum'}</strong></span>
+              <button 
+                disabled={!domain || isScanning}
+                onClick={runNuclei}
+                style={{
+                  background: isScanning ? 'rgba(255,255,255,0.05)' : 'var(--kc-text-primary)',
+                  color: isScanning ? 'var(--kc-text-secondary)' : 'var(--kc-bg-base)',
+                  border: 'none',
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'opacity 0.2s'
+                }}
+              >
+                <Play size={10} fill="currentColor" /> {isScanning ? 'Em execução' : 'Iniciar Scan'}
+              </button>
+            </div>
+            <div ref={scrollRef} style={{ 
+              background: '#0a0a0a', 
+              borderRadius: '10px', 
+              padding: '12px', 
+              height: '400px', 
+              overflowY: 'auto', 
+              fontFamily: 'var(--kc-font-mono)', 
+              fontSize: '11px',
+              border: '1px solid var(--kc-border-main)',
+              lineHeight: '1.5'
+            }}>
+              {nucleiLogs.map((log, i) => (
+                <div key={i} style={{ 
+                  color: log.includes('[ERRO]') ? 'var(--kc-danger)' : log.includes('[INFO]') ? 'var(--kc-text-secondary)' : '#a5d6ff',
+                  borderBottom: '1px solid rgba(255,255,255,0.03)',
+                  paddingBottom: '2px',
+                  marginBottom: '4px'
+                }}>{log}</div>
+              ))}
+              {nucleiLogs.length === 0 && <div style={{color: 'var(--kc-text-disabled)', textAlign: 'center', paddingTop: '40px'}}>Nenhum log de auditoria ainda.</div>}
+            </div>
+          </div>
+        )}
+
+        {activeSegment === 'repeater' && (
+          <div className="sec-view">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ fontSize: '10px', color: 'var(--kc-text-muted)', display: 'block', marginBottom: '6px', fontWeight: 700, letterSpacing: '0.05em' }}>REQUEST EDITOR</label>
+                <textarea 
+                  value={repeaterRaw}
+                  onChange={(e) => setRepeaterRaw(e.target.value)}
+                  placeholder={`URL: https://${domain || 'exemplo.com'}\nMethod: GET\n\n[Corpo opcional]`}
+                  style={{
+                    width: '100%',
+                    height: '160px',
+                    background: '#0a0a0a',
+                    color: '#fff',
+                    border: '1px solid var(--kc-border-main)',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    fontSize: '12px',
+                    fontFamily: 'var(--kc-font-mono)',
+                    resize: 'none',
+                    outline: 'none'
+                  }}
+                />
+                <button 
+                  onClick={sendRepeater}
+                  disabled={isSending}
+                  style={{
+                    width: '100%',
+                    marginTop: '10px',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    color: 'var(--kc-text-primary)',
+                    border: '1px solid var(--kc-border-subtle)',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'background 0.2s'
+                  }}
+                >
+                  {isSending ? 'Enviando...' : 'Repetir Requisição'}
+                </button>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '10px', color: 'var(--kc-text-muted)', display: 'block', marginBottom: '6px', fontWeight: 700, letterSpacing: '0.05em' }}>RESPONSE</label>
+                <div style={{ 
+                  background: '#0a0a0a', 
+                  borderRadius: '8px', 
+                  padding: '12px', 
+                  height: '240px', 
+                  overflowY: 'auto', 
+                  fontFamily: 'var(--kc-font-mono)', 
+                  fontSize: '11px',
+                  color: '#cad3f5',
+                  border: '1px solid var(--kc-border-main)',
+                  whiteSpace: 'pre-wrap'
+                }}>
+                  {repeaterResponse || 'Aguardando envio...'}
+                </div>
               </div>
             </div>
-          )}
-        </main>
-      </aside>
+          </div>
+        )}
+      </main>
 
       <style>{`
-        .security-lab-panel {
-          background: #0d1117;
-          display: flex;
-          flex-direction: column;
+        .loader-pulse {
+          width: 8px;
+          height: 8px;
+          background: var(--kc-success);
+          border-radius: 50%;
+          animation: pulse 1s infinite alternate;
         }
-        .mono { font-family: 'Fira Code', monospace; }
-        .editor-header { font-size: 10px; color: var(--kc-accent-primary); margin-bottom: 4px; text-transform: uppercase; }
-        .sec-nav {
-          display: flex;
-          padding: 8px;
-          gap: 4px;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .sec-nav button {
-          flex: 1;
-          background: transparent;
-          border: 1px solid transparent;
-          color: var(--kc-text-secondary);
-          padding: 6px 4px;
-          font-size: 11px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          cursor: pointer;
-          border-radius: 4px;
-        }
-        .sec-nav button.active {
-          background: rgba(var(--kc-accent-primary-rgb), 0.1);
-          color: var(--kc-accent-primary);
-          border-color: rgba(var(--kc-accent-primary-rgb), 0.2);
-        }
-        .sec-content {
-          padding: 12px;
-          flex: 1;
-          overflow-y: auto;
-          font-family: 'Fira Code', 'Consolas', monospace;
-        }
-        .sec-card {
-          background: #161b22;
-          border: 1px solid #30363d;
-          border-radius: 6px;
-          margin-bottom: 12px;
-        }
-        .sec-card-header {
-          padding: 8px 12px;
-          border-bottom: 1px solid #30363d;
-          font-size: 12px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .sec-card-body {
-          padding: 12px;
-          font-size: 11px;
-        }
-        .tech-item {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 4px;
-        }
-        .dim { opacity: 0.5; font-style: italic; }
-        
-        .audit-controls {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 12px;
-          font-size: 11px;
-        }
-        .sec-btn-run {
-          background: var(--kc-accent-primary);
-          color: white;
-          border: none;
-          padding: 6px 12px;
-          border-radius: 4px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 11px;
-        }
-        .sec-btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        .audit-console {
-          background: black;
-          border-radius: 4px;
-          height: 300px;
-          padding: 8px;
-          font-size: 10px;
-          color: #00ff00;
-          overflow-y: auto;
-          white-space: pre-wrap;
-          border: 1px solid #333;
-        }
-        .console-line { margin-bottom: 2px; }
-
-        .sec-payload-section { margin-bottom: 16px; }
-        .sec-payload-section h4 { 
-          font-size: 11px; 
-          margin-bottom: 8px; 
-          color: var(--kc-accent-primary);
-        }
-        .payload-row {
-          display: flex;
-          align-items: center;
-          background: #161b22;
-          border: 1px solid #30363d;
-          padding: 6px 8px;
-          border-radius: 4px;
-          margin-bottom: 4px;
-          gap: 8px;
-          font-size: 10px;
-        }
-        .payload-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .payload-copy {
-          background: transparent;
-          border: none;
-          color: var(--kc-text-secondary);
-          cursor: pointer;
-          opacity: 0.5;
-        }
-        .payload-copy:hover { opacity: 1; color: var(--kc-accent-primary); }
-
-        .loader-line {
-          height: 2px;
-          width: 100%;
-          background: linear-gradient(90deg, transparent, var(--kc-accent-primary), transparent);
-          background-size: 50% 100%;
-          animation: loading 1.5s infinite linear;
-          margin-top: 8px;
-        }
-        @keyframes loading {
-          0% { background-position: -150% 0; }
-          100% { background-position: 150% 0; }
+        @keyframes pulse {
+          from { opacity: 0.3; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1.1); }
         }
       `}</style>
-    </div>
+    </aside>
   );
 };
-
-interface PayloadSectionProps {
-  title: string;
-  list: string[];
-  onCopy: (s: string) => void;
-}
-
-const PayloadSection: React.FC<PayloadSectionProps> = ({ title, list, onCopy }) => (
-  <div className="sec-payload-section">
-    <h4>{title}</h4>
-    {list.map((p, i) => (
-      <div key={i} className="payload-row">
-        <span className="payload-text">{p}</span>
-        <button className="payload-copy" onClick={() => onCopy(p)}>
-          <Copy size={12} />
-        </button>
-      </div>
-    ))}
-  </div>
-);

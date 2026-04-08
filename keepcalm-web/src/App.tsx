@@ -107,9 +107,13 @@ const App: React.FC = () => {
       
       <main 
         ref={mainRef}
-        style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}
+        style={{ flex: 1, display: 'flex', flexDirection: 'row', position: 'relative', overflow: 'hidden' }}
       >
         <ContentArea />
+        <SecurityLab
+          isOpen={isSecurityLabOpen}
+          onClose={() => setIsSecurityLabOpen(false)}
+        />
       </main>
 
       <StatusBar />
@@ -128,11 +132,6 @@ const App: React.FC = () => {
         onStealthPreferencesChanged={(prefs) => {
           void applyStealthPreferences(prefs);
         }}
-      />
-
-      <SecurityLab
-        isOpen={isSecurityLabOpen}
-        onClose={() => setIsSecurityLabOpen(false)}
       />
     </div>
   );

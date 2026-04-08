@@ -15,10 +15,17 @@
     "core:window:allow-is-maximized",
     "core:window:allow-start-dragging",
     {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        { "name": "binaries/nuclei", "cmd": "binaries/nuclei", "args": true },
+        { "name": "binaries/httpx", "cmd": "binaries/httpx", "args": true }
+      ]
+    },
+    {
       "identifier": "shell:allow-execute",
       "allow": [
-        { "name": "binaries/nuclei", "sidecar": true },
-        { "name": "binaries/httpx", "sidecar": true }
+        { "name": "binaries/nuclei", "cmd": "binaries/nuclei", "args": true },
+        { "name": "binaries/httpx", "cmd": "binaries/httpx", "args": true }
       ]
     }
   ]
