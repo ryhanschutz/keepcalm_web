@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { Lock, ShieldCheck, SlidersHorizontal, X } from 'lucide-react';
+import { Lock, ShieldCheck, SlidersHorizontal, X, User, Zap, Globe, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTabStore } from '../store/useTabStore';
 import { isTauriRuntime } from '../utils/runtime';
@@ -15,37 +15,15 @@ interface NetworkStatus {
   latency_ms: number;
 }
 
-type PrivacyLevel = 1 | 2 | 3 | 4 | 5;
-
-const LEVELS: Array<{
-  id: PrivacyLevel;
-  label: string;
-  color: string;
-}> = [
-  { id: 1, label: 'Normal', color: 'level-gray' },
-  { id: 2, label: 'Protected', color: 'level-blue' },
-  { id: 3, label: 'Anonymous', color: 'level-green' },
-  { id: 4, label: 'Via Tor', color: 'level-purple' },
-  { id: 5, label: 'Maximum', color: 'level-red' },
-];
-
 export const PrivacyPanel = ({ isOpen, onClose, onOpenNetworkSettings }: PrivacyPanelProps) => {
   const tabs = useTabStore((state) => state.tabs);
   const activeTabId = useTabStore((state) => state.activeTabId);
   const privacyStats = useTabStore((state) => state.privacyStats);
-  const navigate = useTabStore((state) => state.navigate);
+  const clearPrivacyStats = useTabStore((state) => state.clearPrivacyStats);
 
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus>({
     active_layer: 'Direct',
     latency_ms: 0,
-  });
-
-  const [privacyLevel, setPrivacyLevel] = useState<PrivacyLevel>(2);
-  const [siteToggles, setSiteToggles] = useState({
-    trackers: true,
-    fingerprint: true,
-    javascript: true,
-    thirdPartyCookies: true,
   });
 
   const activeTab = useMemo(
@@ -57,230 +35,119 @@ export const PrivacyPanel = ({ isOpen, onClose, onOpenNetworkSettings }: Privacy
     if (!activeTab || activeTab.isInternal) {
       return 'start.keepcalm';
     }
-
     try {
       return new URL(activeTab.url).hostname;
     } catch {
-      return activeTab.url;
+      return activeTab.url || 'unknown';
     }
   }, [activeTab]);
 
-  const stealthScore = useMemo(() => {
-    let score = 35;
-
-    if (siteToggles.trackers) score += 15;
-    if (siteToggles.fingerprint) score += 20;
-    if (siteToggles.thirdPartyCookies) score += 10;
-    if (privacyStats.blocked_requests > 0) score += 10;
-    if (networkStatus.active_layer.toLowerCase().includes('tor')) score += 10;
-
-    return Math.min(score, 100);
-  }, [siteToggles, privacyStats.blocked_requests, networkStatus.active_layer]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
+  const refreshNetwork = async () => {
+    if (!isTauriRuntime()) return;
+    try {
+      const status = await invoke<NetworkStatus>('get_network_status');
+      setNetworkStatus(status);
+    } catch (e) {
+      console.error('Failed to update network status:', e);
     }
+  };
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
+  const clearStats = async () => {
+    try {
+      if (isTauriRuntime()) {
+        await clearPrivacyStats();
+        return;
       }
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [isOpen, onClose]);
+    } catch (e) {
+      console.error('Failed to clear stats:', e);
+    }
+  };
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
+    if (isOpen) {
+      void refreshNetwork();
+      const onKeyDown = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+      window.addEventListener('keydown', onKeyDown);
+      return () => window.removeEventListener('keydown', onKeyDown);
     }
-
-    if (!isTauriRuntime()) {
-      setNetworkStatus({
-        active_layer: 'Preview Mode',
-        latency_ms: 0,
-      });
-      return;
-    }
-
-    void invoke<NetworkStatus>('get_network_status')
-      .then((status) => {
-        setNetworkStatus(status);
-      })
-      .catch((error) => {
-        console.error('Failed to load network status for privacy panel:', error);
-      });
   }, [isOpen]);
 
-  if (!isOpen) {
-    return null;
-  }
+  if (!isOpen) return null;
+
+  const isTor = networkStatus.active_layer.toLowerCase().includes('tor');
 
   return (
     <div className="pp-overlay" onClick={onClose}>
-      <aside
-        className="pp-panel"
-        onClick={(event) => event.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Privacy panel"
-      >
+      <aside className="pp-panel" onClick={(e) => e.stopPropagation()}>
         <header className="pp-header">
           <div className="pp-title">
-            <ShieldCheck size={16} />
-            <strong>Privacy</strong>
+            <ShieldCheck size={16} className="text-accent" />
+            <span>Site Security</span>
           </div>
-          <button type="button" className="pp-icon-btn" onClick={onClose} aria-label="Close privacy panel">
-            <X size={14} />
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#888', cursor: 'pointer' }}>
+            <X size={16} />
           </button>
         </header>
 
-        <section className="pp-site">
-          <div className="pp-site-main">
-            <div className="pp-favicon">{domain.charAt(0).toUpperCase()}</div>
-            <div className="pp-site-copy">
-              <strong>{domain}</strong>
-              <span className="pp-badge">
-                <Lock size={12} />
-                Secure
-              </span>
+        <div className="pp-content">
+          <div className="pp-site-hero">
+            <div className="pp-favicon-large">
+              {domain.charAt(0).toUpperCase()}
+            </div>
+            <div className="pp-site-info">
+              <h3>{domain}</h3>
+              <div className="pp-status-tag">
+                <Lock size={10} />
+                Encrypted Connection
+              </div>
             </div>
           </div>
-        </section>
 
-        <section className="pp-section">
-          <span className="pp-label">Privacy Level</span>
-          <div className="pp-level-grid">
-            {LEVELS.map((level) => (
-              <button
-                key={level.id}
-                type="button"
-                className={`pp-level-btn ${privacyLevel === level.id ? 'active' : ''}`}
-                onClick={() => setPrivacyLevel(level.id)}
-              >
-                <span className={`pp-level-dot ${level.color}`} />
-                {level.label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="pp-section">
-          <span className="pp-label">Live Stats</span>
-          <div className="pp-stats">
-            <article className="pp-stat-card">
-              <span>Blocked Requests</span>
+          <div className="pp-stats-row">
+            <div className="pp-stat-box">
+              <span>Blocked trackers</span>
               <strong>{privacyStats.blocked_requests}</strong>
-            </article>
-            <article className="pp-stat-card">
-              <span>Blocked Navigations</span>
+            </div>
+            <div className="pp-stat-box">
+              <span>Threats fixed</span>
               <strong>{privacyStats.blocked_top_level_navigations}</strong>
-            </article>
-          </div>
-        </section>
-
-        <section className="pp-section">
-          <span className="pp-label">Site Rules</span>
-          <div className="pp-toggles">
-            <ToggleRow
-              label="Trackers"
-              checked={siteToggles.trackers}
-              onChange={(checked) => setSiteToggles((prev) => ({ ...prev, trackers: checked }))}
-            />
-            <ToggleRow
-              label="Fingerprint Protection"
-              checked={siteToggles.fingerprint}
-              onChange={(checked) => setSiteToggles((prev) => ({ ...prev, fingerprint: checked }))}
-            />
-            <ToggleRow
-              label="JavaScript"
-              checked={siteToggles.javascript}
-              onChange={(checked) => setSiteToggles((prev) => ({ ...prev, javascript: checked }))}
-            />
-            <ToggleRow
-              label="Third-party Cookies"
-              checked={siteToggles.thirdPartyCookies}
-              onChange={(checked) =>
-                setSiteToggles((prev) => ({ ...prev, thirdPartyCookies: checked }))
-              }
-            />
-          </div>
-        </section>
-
-        <section className="pp-section">
-          <span className="pp-label">Network Route</span>
-          <div className="pp-route">
-            <span>You</span>
-            <span className="pp-route-arrow">→</span>
-            <span>{networkStatus.active_layer}</span>
-            <span className="pp-route-arrow">→</span>
-            <span>{domain}</span>
-            <span className="pp-latency">{networkStatus.latency_ms} ms</span>
-          </div>
-        </section>
-
-        <section className="pp-section">
-          <span className="pp-label">Stealth Check</span>
-          <div className="pp-stealth">
-            <div className="pp-stealth-score">
-              <span>Estimated stealth</span>
-              <strong>{stealthScore}%</strong>
-            </div>
-            <div className="pp-stealth-actions">
-              <button type="button" onClick={() => void navigate('https://coveryourtracks.eff.org')}>
-                EFF test
-              </button>
-              <button type="button" onClick={() => void navigate('https://browserleaks.com')}>
-                BrowserLeaks
-              </button>
-              <button type="button" onClick={() => void navigate('https://check.torproject.org')}>
-                Tor check
-              </button>
             </div>
           </div>
-        </section>
 
-        <footer className="pp-footer">
-          <button
-            type="button"
-            className="pp-settings-btn"
-            onClick={() => {
-              onClose();
-              onOpenNetworkSettings();
-            }}
-          >
-            <SlidersHorizontal size={14} />
-            Advanced Security Settings
-          </button>
-        </footer>
+          <div className="pp-section-label" style={{ fontSize: '10px', color: '#666', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Connection Route
+          </div>
+
+          <div className="pp-route-viz">
+            <div className="pp-path-line" />
+            <div className="pp-node active">
+              <div className="pp-node-icon"><User size={14} /></div>
+              <span>YOU</span>
+            </div>
+            <div className={`pp-node ${isTor ? 'active' : ''}`} style={{ color: isTor ? 'var(--kc-accent-primary)' : 'inherit' }}>
+              <div className="pp-node-icon">
+                {isTor ? <Zap size={14} fill="currentColor" /> : <Globe size={14} />}
+              </div>
+              <span>{networkStatus.active_layer.toUpperCase()}</span>
+            </div>
+            <div className="pp-node">
+              <div className="pp-node-icon"><Lock size={14} /></div>
+              <span>TARGET</span>
+            </div>
+          </div>
+
+          <div className="pp-actions">
+            <button className="pp-btn" onClick={() => { onClose(); onOpenNetworkSettings(); }}>
+              <SlidersHorizontal size={14} />
+              Advanced Firewall
+            </button>
+            <button className="pp-btn pp-btn-danger" onClick={clearStats}>
+              <Trash2 size={14} />
+              Clear Site Data & Stats
+            </button>
+          </div>
+        </div>
       </aside>
     </div>
-  );
-};
-
-interface ToggleRowProps {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}
-
-const ToggleRow = ({ label, checked, onChange }: ToggleRowProps) => {
-  return (
-    <label className="pp-toggle-row">
-      <span>{label}</span>
-      <button
-        type="button"
-        className={`pp-toggle ${checked ? 'on' : 'off'}`}
-        onClick={() => onChange(!checked)}
-        aria-pressed={checked}
-      >
-        <span className="pp-toggle-thumb" />
-      </button>
-    </label>
   );
 };

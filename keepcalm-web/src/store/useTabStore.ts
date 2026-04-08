@@ -36,15 +36,6 @@ export interface DownloadInfo {
   status: 'started' | 'progress' | 'finished' | 'canceled';
 }
 
-export interface CapturedRequest {
-  id: string;
-  method: string;
-  url: string;
-  headers: Record<string, string>;
-  body?: string;
-  timestamp: number;
-}
-
 export interface PrivacyStats {
   blocked_requests: number;
   blocked_top_level_navigations: number;
@@ -65,7 +56,6 @@ interface TabState {
   bookmarks: Bookmark[];
   activeDownload: DownloadInfo | null;
   privacyStats: PrivacyStats;
-  capturedRequests: CapturedRequest[];
   hasHydrated: boolean;
   setHydrated: (hydrated: boolean) => void;
   ensureInitialTab: () => Promise<void>;
@@ -84,8 +74,6 @@ interface TabState {
   toggleBookmark: (url: string, title?: string) => void;
   setActiveDownload: (download: DownloadInfo | null) => void;
   updateDownloadProgress: (downloaded: number, total: number | null) => void;
-  addCapturedRequest: (request: Omit<CapturedRequest, 'id' | 'timestamp'>) => void;
-  clearCapturedRequests: () => void;
 }
 
 export const useTabStore = create<TabState>()(
@@ -96,7 +84,6 @@ export const useTabStore = create<TabState>()(
     bookmarks: [],
     activeDownload: null,
     privacyStats: DEFAULT_PRIVACY_STATS,
-    capturedRequests: [],
       hasHydrated: false,
       setHydrated: (hydrated) => set({ hasHydrated: hydrated }),
 
@@ -388,17 +375,6 @@ export const useTabStore = create<TabState>()(
           });
         }
       },
-      addCapturedRequest: (request) => {
-        const newRequest: CapturedRequest = {
-          ...request,
-          id: crypto.randomUUID(),
-          timestamp: Date.now(),
-        };
-        set((state) => ({
-          capturedRequests: [newRequest, ...state.capturedRequests].slice(0, 50), // Limited to 50 for performance
-        }));
-      },
-      clearCapturedRequests: () => set({ capturedRequests: [] }),
     }),
     {
       name: 'keepcalm-tab-session',

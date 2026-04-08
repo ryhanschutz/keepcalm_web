@@ -1,8 +1,11 @@
-use tauri::{AppHandle, Manager, WebviewBuilder, WebviewUrl, Emitter, State};
-use tauri::webview::DownloadEvent;
-use crate::privacy::request_filter::{RequestFilter, RequestDecision};
 use crate::network::detector::NetworkDetector;
+use crate::privacy::request_filter::{RequestDecision, RequestFilter};
+use crate::privacy::PrivacyTelemetry;
+use crate::traffic::models::{BodyContent, HttpRequest, HttpResponse, HttpTransaction};
+use crate::traffic::{record_transaction, TrafficState};
 use std::sync::{Arc, RwLock};
+use tauri::webview::DownloadEvent;
+use tauri::{AppHandle, Emitter, Manager, State, WebviewBuilder, WebviewUrl};
 
 #[tauri::command]
 pub async fn create_tab_webview(
@@ -13,14 +16,15 @@ pub async fn create_tab_webview(
     _partition: String,
     detector: State<'_, Arc<NetworkDetector>>,
     filter_state: State<'_, Arc<RwLock<RequestFilter>>>,
-    traffic_state: State<'_, crate::traffic::TrafficState>,
+    privacy_telemetry: State<'_, Arc<PrivacyTelemetry>>,
+    traffic_state: State<'_, TrafficState>,
 ) -> Result<(), String> {
     println!("[KeepCalm] Comando Rust: Criando aba {} -> {}", id, url);
 
     let _ = app.emit("webview-request-create", id.clone());
     let webview_url = resolve_webview_url(&url);
     let anti_fingerprint_script = crate::privacy::fingerprint::generate_override_script(&id);
-    
+
     let id_clone = id.clone();
     let app_handle = app.clone();
     let title_event_app = app.clone();
@@ -31,99 +35,111 @@ pub async fn create_tab_webview(
     let finish_event_id = id.clone();
     let download_app = app.clone();
 
-    println!("[KeepCalm] Debug {}: obtendo filter_state", id);
     let filter = Arc::clone(&filter_state);
-    let traffic_arc = traffic_state.inner().0.clone();
-
+    let traffic_store = traffic_state.inner().0.clone();
+    let privacy = Arc::clone(&privacy_telemetry);
     const TRAFFIC_INTERCEPTOR: &str = include_str!("../../../src/utils/interceptor.js");
 
-    println!("[KeepCalm] Debug {}: criando builder", id);
     let mut webview_builder = WebviewBuilder::new(&id, webview_url)
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
         .initialization_script(TRAFFIC_INTERCEPTOR)
         .initialization_script(&anti_fingerprint_script);
 
-    // Injeção de bloqueadores cosméticos
     if url.contains("youtube.com") || url.contains("youtu.be") {
-        webview_builder = webview_builder.initialization_script(crate::privacy::youtube::get_youtube_adblock_script());
+        webview_builder =
+            webview_builder.initialization_script(crate::privacy::youtube::get_youtube_adblock_script());
     }
 
     let mut webview_builder = webview_builder.incognito(true);
 
-    println!("[KeepCalm] Debug {}: solicitando proxy", id);
-    // Tenta obter proxy com timeout para não bloquear a criação da aba
     let proxy_url = tokio::time::timeout(
         std::time::Duration::from_millis(500),
-        detector.get_active_proxy()
-    ).await.unwrap_or(None);
+        detector.get_active_proxy(),
+    )
+    .await
+    .unwrap_or(None);
 
-    println!("[KeepCalm] Debug {}: proxy resolvido", id);
     if let Some(proxy_url_str) = proxy_url {
         if let Ok(proxy_url) = proxy_url_str.parse() {
             webview_builder = webview_builder.proxy_url(proxy_url);
         }
     }
 
-    // Interceptação Nativa (Fase 2): Filtro e Captura
     let app_for_capture = app.clone();
+    let app_for_privacy = app.clone();
     let webview_builder = webview_builder.on_web_resource_request(move |request, response| {
         let uri = request.uri().to_string();
-        
-        // Bloqueio
-        if let Ok(filter_guard) = filter.read() {
-            if let RequestDecision::Block = (*filter_guard).decide(&uri, "", "other") {
-                *response.status_mut() = tauri::http::StatusCode::FORBIDDEN;
-                return;
-            }
+        if !should_capture_resource(&uri) {
+            return;
         }
 
-        // Captura Nativa (Capturamos metadados e headers no Rust)
-        if !uri.starts_with("tauri://") && !uri.starts_with("ipc:") {
-            let req_headers: Vec<(String, String)> = request.headers().iter()
-                .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
-                .collect();
+        let req_headers: Vec<(String, String)> = request
+            .headers()
+            .iter()
+            .map(|(key, value)| (key.to_string(), value.to_str().unwrap_or("").to_string()))
+            .collect();
 
-            let res_headers: Vec<(String, String)> = response.headers().iter()
-                .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
-                .collect();
+        let decision = filter
+            .read()
+            .ok()
+            .map(|guard| (*guard).decide(&uri, "", "other"))
+            .unwrap_or(RequestDecision::Allow);
 
-            let http_req = crate::traffic::models::HttpRequest {
+        if let RequestDecision::Block = decision {
+            *response.status_mut() = tauri::http::StatusCode::FORBIDDEN;
+
+            let transaction = HttpTransaction {
+                id: uuid::Uuid::new_v4().to_string(),
+                hash: String::new(),
+                request: HttpRequest {
+                    method: request.method().to_string(),
+                    url: uri.clone(),
+                    headers: req_headers,
+                    body: BodyContent::Empty,
+                },
+                response: Some(HttpResponse {
+                    status: tauri::http::StatusCode::FORBIDDEN.as_u16(),
+                    headers: Vec::new(),
+                    body: BodyContent::Empty,
+                }),
+                timestamp: now_unix_ms(),
+                size: 0,
+                truncated: false,
+                tags: vec!["blocked".to_string(), "native".to_string()],
+            };
+            record_transaction(&traffic_store, &app_for_capture, transaction);
+
+            let blocked_url = uri;
+            let blocked_app = app_for_privacy.clone();
+            let privacy = Arc::clone(&privacy);
+            tauri::async_runtime::spawn(async move {
+                privacy.record_blocked_request(&blocked_url, false).await;
+                let stats = privacy.get_stats().await;
+                let _ = blocked_app.emit("privacy-stats-updated", stats);
+            });
+            return;
+        }
+
+        let transaction = HttpTransaction {
+            id: uuid::Uuid::new_v4().to_string(),
+            hash: String::new(),
+            request: HttpRequest {
                 method: request.method().to_string(),
                 url: uri,
                 headers: req_headers,
-                body: crate::traffic::models::BodyContent::Empty, // Nativo não captura corpo POST facilmente sem ler stream
-            };
-
-            let http_res = crate::traffic::models::HttpResponse {
-                status: response.status().as_u16(),
-                headers: res_headers,
-                body: crate::traffic::models::BodyContent::Empty,
-            };
-
-            let tx_id = uuid::Uuid::new_v4().to_string();
-            let timestamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis() as u64;
-
-            let tx = crate::traffic::models::HttpTransaction {
-                id: tx_id,
-                hash: String::new(),
-                request: http_req,
-                response: Some(http_res),
-                timestamp,
-                size: 0,
-                truncated: false,
-                tags: vec!["native".to_string()],
-            };
-
-            if let Ok(mut store) = traffic_arc.write() {
-                store.add(tx);
-                let _ = app_for_capture.emit("traffic-updated", ());
-            }
-        }
+                body: BodyContent::Empty,
+            },
+            response: None,
+            timestamp: now_unix_ms(),
+            size: 0,
+            truncated: false,
+            tags: vec!["metadata".to_string(), "native".to_string()],
+        };
+        record_transaction(&traffic_store, &app_for_capture, transaction);
     });
 
     let webview_builder = webview_builder
         .on_navigation(move |url| {
-            // Notificar frontend sobre mudança de URL utilizando o trait Emitter
             let _ = app_handle.emit("webview-url-change", (id_clone.clone(), url.to_string()));
             let _ = start_event_app.emit("webview-load-started", start_event_id.clone());
             true
@@ -137,27 +153,37 @@ pub async fn create_tab_webview(
                 (finish_event_id.clone(), payload.url().to_string()),
             );
         })
-        .on_download(move |_webview, event| {
-            match event {
-                DownloadEvent::Requested { url, destination } => {
-                    let download_id = url.to_string();
-                    let filename = destination.file_name().map(|n: &std::ffi::OsStr| n.to_string_lossy().to_string()).unwrap_or_else(|| "download".to_string());
-                    let _ = download_app.emit("download-started", serde_json::json!({
-                        "id": download_id.clone(), 
+        .on_download(move |_webview, event| match event {
+            DownloadEvent::Requested { url, destination } => {
+                let download_id = url.to_string();
+                let filename = destination
+                    .file_name()
+                    .map(|name| name.to_string_lossy().to_string())
+                    .unwrap_or_else(|| "download".to_string());
+                let _ = download_app.emit(
+                    "download-started",
+                    serde_json::json!({
+                        "id": download_id,
                         "filename": filename,
                         "path": destination.to_string_lossy(),
-                    }));
-                    true 
-                },
-                DownloadEvent::Finished { .. } => {
-                    let _ = download_app.emit("download-finished", serde_json::json!({ "status": "ok" }));
-                    true
-                },
-                _ => true
+                    }),
+                );
+                true
             }
+            DownloadEvent::Finished { url, path, success } => {
+                let _ = download_app.emit(
+                    "download-finished",
+                    serde_json::json!({
+                        "id": url.to_string(),
+                        "path": path.map(|value| value.to_string_lossy().to_string()),
+                        "success": success,
+                    }),
+                );
+                true
+            }
+            _ => true,
         });
 
-    println!("[KeepCalm] Comando Rust: Webview builder configurado. Iniciando add_child para {}", id);
     let result = window.add_child(
         webview_builder,
         tauri::LogicalPosition::new(0.0, 0.0),
@@ -166,17 +192,19 @@ pub async fn create_tab_webview(
 
     match result {
         Ok(_) => {
-            println!("[KeepCalm] Comando Rust: Webview {} criada com sucesso como child de main.", id);
+            println!(
+                "[KeepCalm] Comando Rust: Webview {} criada com sucesso como child de main.",
+                id
+            );
         }
-        Err(e) => {
-            let err_msg = format!("Falha ao criar Webview: {}", e);
+        Err(error) => {
+            let err_msg = format!("Falha ao criar Webview: {}", error);
             eprintln!("[KeepCalm] Comando Rust: {}", err_msg);
             return Err(err_msg);
         }
     }
 
     let _ = app.emit("webview-load-started", id);
-
     Ok(())
 }
 
@@ -223,13 +251,15 @@ pub async fn update_webview_url(
 
     match app_handle.get_webview(&id) {
         Some(webview) => {
-            println!("[KeepCalm] Comando Rust: Webview {} encontrado. Navegando...", id);
             let webview_url = resolve_external_url(&url)?;
             webview.navigate(webview_url).map_err(|e| e.to_string())?;
             let _ = app_handle.emit("webview-load-started", id);
         }
         None => {
-            eprintln!("[KeepCalm] ERRO Rust: Tentou navegar em uma URL mas o Webview {} NAO existe ou foi perdido!", id);
+            eprintln!(
+                "[KeepCalm] ERRO Rust: Tentou navegar em uma URL mas o Webview {} nao existe!",
+                id
+            );
         }
     }
 
@@ -285,4 +315,20 @@ fn resolve_external_url(url: &str) -> Result<url::Url, String> {
             .parse()
             .map_err(|e| format!("URL invalida: {}", e))
     }
+}
+
+fn should_capture_resource(uri: &str) -> bool {
+    !(uri.starts_with("tauri://")
+        || uri.starts_with("ipc:")
+        || uri.starts_with("data:")
+        || uri.starts_with("blob:")
+        || uri.starts_with("about:")
+        || uri.starts_with("keepcalm://"))
+}
+
+fn now_unix_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|value| value.as_millis() as u64)
+        .unwrap_or_default()
 }

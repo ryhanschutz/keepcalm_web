@@ -48,8 +48,12 @@ export const BackendListener: React.FC = () => {
       updateProgress(event.payload.id, event.payload.downloaded, event.payload.total);
     });
 
-    const unlistenDownloadFinished = listen<string>('download-finished', (event) => {
-      finishDownload(event.payload);
+    const unlistenDownloadFinished = listen<{ id: string; success: boolean }>('download-finished', (event) => {
+      if (event.payload.success) {
+        finishDownload(event.payload.id);
+        return;
+      }
+      cancelDownload(event.payload.id);
     });
 
     const unlistenDownloadCanceled = listen<string>('download-canceled', (event) => {

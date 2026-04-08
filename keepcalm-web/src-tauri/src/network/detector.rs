@@ -4,12 +4,6 @@ use crate::network::doh::DohLayer;
 use std::time::Instant;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use serde::Deserialize;
-
-#[derive(Deserialize)]
-struct BridgeResponse {
-    bridges: Vec<String>,
-}
 
 pub struct NetworkDetector {
     tor_direct: Arc<TorLayer>,
