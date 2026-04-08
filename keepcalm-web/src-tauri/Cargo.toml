@@ -35,6 +35,7 @@ aho-corasick = "1"
 sqlx = { version = "0.8", features = ["sqlite", "runtime-tokio"] }
 url = "2"
 uuid = { version = "1", features = ["v4"] }
+reqwest = { version = "0.12", features = ["json", "blocking"] }
 windows = { version = "0.58.0", features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation"] }
 tauri-plugin-global-shortcut = "2.3.1"
 

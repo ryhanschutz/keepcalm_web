@@ -41,6 +41,8 @@ pub fn run() {
             crate::commands::tabs::reload_webview,
             crate::commands::tabs::close_webview,
             crate::commands::pip::create_pip_window,
+            crate::commands::sidecars::run_security_tool,
+            crate::commands::repeater::send_repeater_request,
         ])
         .setup(|app| {
             // Ativar proteção contra captura de tela no Windows (Anti-Capture)
@@ -83,9 +85,10 @@ pub fn run() {
             });
 
             // Loop de detecção de rede (Tor/Proxy)
+            let app_handle_main = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 loop {
-                    let _ = detector_clone.run_probe().await;
+                    let _ = detector_clone.run_probe(Some(&app_handle_main)).await;
                     tokio::time::sleep(std::time::Duration::from_secs(60)).await;
                 }
             });

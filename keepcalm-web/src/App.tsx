@@ -6,6 +6,7 @@ import StatusBar from './components/StatusBar';
 import { BackendListener } from './components/BackendListener';
 import { NetworkSettings } from './components/NetworkSettings';
 import { PrivacyPanel } from './components/PrivacyPanel';
+import { SecurityLab } from './components/SecurityLab';
 import { useTabStore } from './store/useTabStore';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { isRegistered, register, unregister } from '@tauri-apps/plugin-global-shortcut';
@@ -18,6 +19,7 @@ const QUICK_SHORTCUT_KEY = 'kc-quick-shortcut-enabled';
 const App: React.FC = () => {
   const [isNetworkSettingsOpen, setIsNetworkSettingsOpen] = useState(false);
   const [isPrivacyPanelOpen, setIsPrivacyPanelOpen] = useState(false);
+  const [isSecurityLabOpen, setIsSecurityLabOpen] = useState(false);
   const { hasHydrated, ensureInitialTab, restoreSessionWebviews } = useTabStore();
   const mainRef = useRef<HTMLElement>(null);
   const bootstrappedRef = useRef(false);
@@ -97,7 +99,10 @@ const App: React.FC = () => {
       background: 'var(--kc-bg-base)',
       overflow: 'hidden'
     }}>
-      <HeaderBar onTogglePrivacyPanel={() => setIsPrivacyPanelOpen(prev => !prev)} />
+      <HeaderBar 
+        onTogglePrivacyPanel={() => setIsPrivacyPanelOpen(prev => !prev)} 
+        onToggleSecurityLab={() => setIsSecurityLabOpen(prev => !prev)}
+      />
       <BookmarksBar />
       
       <main 
@@ -123,6 +128,11 @@ const App: React.FC = () => {
         onStealthPreferencesChanged={(prefs) => {
           void applyStealthPreferences(prefs);
         }}
+      />
+
+      <SecurityLab
+        isOpen={isSecurityLabOpen}
+        onClose={() => setIsSecurityLabOpen(false)}
       />
     </div>
   );

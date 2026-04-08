@@ -30,7 +30,7 @@ impl TorLayer {
         Ok(())
     }
 
-    async fn get_or_init_client(&self) -> Result<TorClient<PreferredRuntime>> {
+    pub(crate) async fn get_or_init_client(&self, app_handle: Option<&tauri::AppHandle>) -> Result<TorClient<PreferredRuntime>> {
         // Primeiro: verificar se já existe cliente sem segurar o lock por muito tempo
         {
             let client_lock = self.client.lock().await;
@@ -66,17 +66,26 @@ impl TorLayer {
             .create_unbootstrapped()?;
         
         let timeout_duration = if self.use_bridges {
-            Duration::from_secs(45)
+            Duration::from_secs(60) // Aumentado para 60s
         } else {
-            Duration::from_secs(15)
+            Duration::from_secs(30) // Aumentado para 30s
         };
 
         println!("[KeepCalm] Iniciando bootstrap (Timeout: {:?})...", timeout_duration);
         
+        if let Some(handle) = app_handle {
+            use tauri::Emitter;
+            let _ = handle.emit("tor-bootstrap-status", "Iniciando conexão...");
+        }
+
         // Bootstrap acontece SEM o lock — outros podem chamar get_proxy_url normalmente
         match tokio::time::timeout(timeout_duration, client.bootstrap()).await {
             Ok(Ok(_)) => {
                 println!("[KeepCalm] Bootstrap com sucesso.");
+                if let Some(handle) = app_handle {
+                    use tauri::Emitter;
+                    let _ = handle.emit("tor-bootstrap-status", "Conectado");
+                }
                 // Só agora readquire o lock para salvar o cliente
                 let mut client_lock = self.client.lock().await;
                 *client_lock = Some(client.clone());
@@ -84,10 +93,18 @@ impl TorLayer {
             }
             Ok(Err(e)) => {
                 println!("[KeepCalm] Erro no bootstrap: {}", e);
+                if let Some(handle) = app_handle {
+                    use tauri::Emitter;
+                    let _ = handle.emit("tor-bootstrap-status", format!("Erro: {}", e));
+                }
                 Err(format!("Falha no bootstrap: {}", e).into())
             }
             Err(_) => {
                 println!("[KeepCalm] Bootstrap expirou.");
+                if let Some(handle) = app_handle {
+                    use tauri::Emitter;
+                    let _ = handle.emit("tor-bootstrap-status", "Timeout (Tente usar bridges)");
+                }
                 Err("Bootstrap do Tor expirou".into())
             }
         }
@@ -110,14 +127,14 @@ impl TorLayer {
 #[async_trait]
 impl NetworkLayer for TorLayer {
     async fn probe(&self) -> Result<bool> {
-        match self.get_or_init_client().await {
+        match self.get_or_init_client(None).await {
             Ok(_) => Ok(true),
             Err(_) => Ok(false),
         }
     }
 
     async fn connect(&self, url: &Url) -> Result<Box<dyn AsyncReadWrite>> {
-        let client = self.get_or_init_client().await?;
+        let client = self.get_or_init_client(None).await?;
         let host = url.host_str().ok_or("Host inválido")?;
         let port = url.port_or_known_default().ok_or("Porta inválida")?;
         

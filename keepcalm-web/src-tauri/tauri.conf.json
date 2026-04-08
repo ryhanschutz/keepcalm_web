@@ -35,6 +35,10 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["assets/blocklist.db"]
+    "resources": ["assets/blocklist.db"],
+    "externalBin": [
+      "binaries/nuclei",
+      "binaries/httpx"
+    ]
   }
 }

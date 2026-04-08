@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { 
-  ArrowLeft, ArrowRight, Shield, Puzzle, Menu, Plus, X, Minus, Square, Star 
+  ArrowLeft, ArrowRight, Shield, Puzzle, Menu, Plus, X, Minus, Square, Star, Terminal 
 } from 'lucide-react';
 import DownloadIndicator from './DownloadIndicator';
 import logo from '../assets/logo.png';
@@ -10,9 +10,10 @@ import { useTabStore } from '../store/useTabStore';
 
 interface HeaderBarProps {
   onTogglePrivacyPanel?: () => void;
+  onToggleSecurityLab?: () => void;
 }
 
-const HeaderBar: React.FC<HeaderBarProps> = ({ onTogglePrivacyPanel }) => {
+const HeaderBar: React.FC<HeaderBarProps> = ({ onTogglePrivacyPanel, onToggleSecurityLab }) => {
   const [appWindow, setAppWindow] = useState<any>(null);
   const [focused, setFocused] = useState(false);
   
@@ -248,6 +249,19 @@ const HeaderBar: React.FC<HeaderBarProps> = ({ onTogglePrivacyPanel }) => {
           <button 
             style={actionBtnStyle}
             onClick={onTogglePrivacyPanel}
+            title="Privacy Guard"
+          >
+            <Shield size={18} strokeWidth={1.5} />
+          </button>
+          <button 
+            style={{...actionBtnStyle, color: 'var(--kc-accent-primary)'}}
+            onClick={onToggleSecurityLab}
+            title="Security Lab"
+          >
+            <Terminal size={18} strokeWidth={1.5} />
+          </button>
+          <button 
+            style={actionBtnStyle}
           >
             <Menu size={18} strokeWidth={1.5} />
           </button>

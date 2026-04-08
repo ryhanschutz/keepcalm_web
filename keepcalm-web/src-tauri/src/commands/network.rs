@@ -9,15 +9,19 @@ pub async fn get_network_status(detector: State<'_, Arc<NetworkDetector>>) -> st
 }
 
 #[tauri::command]
-pub async fn run_network_probe(detector: State<'_, Arc<NetworkDetector>>) -> std::result::Result<NetworkStatus, String> {
-    detector.run_probe().await.map_err(|e| e.to_string())
+pub async fn run_network_probe(
+    app_handle: tauri::AppHandle,
+    detector: State<'_, Arc<NetworkDetector>>
+) -> std::result::Result<NetworkStatus, String> {
+    detector.run_probe(Some(&app_handle)).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 pub async fn set_bypass_mode(
+    app_handle: tauri::AppHandle,
     mode: BypassMode,
     detector: State<'_, Arc<NetworkDetector>>,
 ) -> std::result::Result<NetworkStatus, String> {
     detector.set_bypass_mode(mode).await;
-    detector.run_probe().await.map_err(|e| e.to_string())
+    detector.run_probe(Some(&app_handle)).await.map_err(|e| e.to_string())
 }

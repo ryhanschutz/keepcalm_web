@@ -30,7 +30,7 @@ impl NetworkDetector {
         }
     }
 
-    pub async fn run_probe(&self) -> Result<NetworkStatus> {
+    pub async fn run_probe(&self, app_handle: Option<&tauri::AppHandle>) -> Result<NetworkStatus> {
         let start = Instant::now();
         let bypass_mode = self.bypass_mode.lock().await.clone();
         
@@ -47,7 +47,7 @@ impl NetworkDetector {
                 }
             }
             BypassMode::Tor => {
-                let is_tor_ok = self.tor_direct.probe().await.unwrap_or(false);
+                let is_tor_ok = self.tor_direct.get_or_init_client(app_handle).await.map(|_| true).unwrap_or(false);
                 NetworkStatus {
                     profile: if is_tor_ok { NetworkProfile::SniFiltered } else { NetworkProfile::Restricted },
                     bypass_active: is_tor_ok,
@@ -60,7 +60,7 @@ impl NetworkDetector {
                 let bridges = self.fetch_bridges().await;
                 let _ = self.tor_bridges.set_bridges(bridges).await;
                 
-                let is_bridge_ok = self.tor_bridges.probe().await.unwrap_or(false);
+                let is_bridge_ok = self.tor_bridges.get_or_init_client(app_handle).await.map(|_| true).unwrap_or(false);
                 NetworkStatus {
                     profile: if is_bridge_ok { NetworkProfile::DpiActive } else { NetworkProfile::Restricted },
                     bypass_active: is_bridge_ok,
@@ -89,7 +89,7 @@ impl NetworkDetector {
                         latency_ms: start.elapsed().as_millis() as u32,
                     }
                 } else {
-                    let is_tor_ok = self.tor_direct.probe().await.unwrap_or(false);
+                    let is_tor_ok = self.tor_direct.get_or_init_client(app_handle).await.map(|_| true).unwrap_or(false);
                     if is_tor_ok {
                         NetworkStatus {
                             profile: NetworkProfile::SniFiltered,
@@ -101,7 +101,7 @@ impl NetworkDetector {
                     } else {
                         let bridges = self.fetch_bridges().await;
                         let _ = self.tor_bridges.set_bridges(bridges).await;
-                        let is_bridge_ok = self.tor_bridges.probe().await.unwrap_or(false);
+                        let is_bridge_ok = self.tor_bridges.get_or_init_client(app_handle).await.map(|_| true).unwrap_or(false);
                         
                         NetworkStatus {
                             profile: if is_bridge_ok { NetworkProfile::DpiActive } else { NetworkProfile::Restricted },
