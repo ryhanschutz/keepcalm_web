@@ -1,0 +1,141 @@
+﻿cargo :     Checking keepcalm-web v0.1.0 (C:\Use
+rs\ryhan_Schutz\Documents\keepcalm_Web\keepcalm_
+web\keepcalm-web\src-tauri)
+No linha:1 caractere:1
++ cargo check --color never 2>&1 | Out-File 
+-FilePath errors.txt -Encod ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   
+     Checking ke...-web\src-tauri):String) [],  
+   RemoteException
+    + FullyQualifiedErrorId : NativeCommandErro 
+   r
+ 
+warning: unused import: `Manager`
+ --> src\traffic\mod.rs:7:24
+  |
+7 | use tauri::{AppHandle, Manager, Emitter};
+  |                        ^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of 
+`#[warn(unused)]`) on by default
+
+error[E0599]: no method named `tag_response` 
+found for mutable reference `&mut RequestStore` 
+in the current scope
+  --> src\traffic\mod.rs:37:18
+   |
+37 |             self.tag_response(tx);
+   |                  ^^^^^^^^^^^^ this is an 
+associated function, not a method
+   |
+   = note: found the following associated 
+functions; to be used as methods, functions 
+must have a `self` parameter
+note: the candidate is defined in an impl for 
+the type `RequestStore`
+  --> src\traffic\mod.rs:68:5
+   |
+68 |     fn tag_response(tx: &mut 
+HttpTransaction) {
+   |     
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: there is a method `update_response` with 
+a similar name, but with different arguments
+  --> src\traffic\mod.rs:34:5
+   |
+34 |     pub fn update_response(&mut self, id: 
+&str, response: HttpResponse) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: use associated function syntax instead
+   |
+37 -             self.tag_response(tx);
+37 +             RequestStore::tag_response(tx);
+   |
+
+error[E0599]: no method named 
+`get_webview_window` found for mutable 
+reference `&mut tauri::App` in the current scope
+  --> src\lib.rs:62:43
+   |
+62 |                 if let Some(window) = 
+app.get_webview_window("main") {
+   |                                           
+^^^^^^^^^^^^^^^^^^
+   |
+   = help: items from traits can only be used 
+if the trait is in scope
+help: trait `Manager` which provides 
+`get_webview_window` is implemented but not in 
+scope; perhaps you want to import it
+   |
+ 1 + use tauri::Manager;
+   |
+help: there is a method `get_webview` with a 
+similar name
+   |
+62 -                 if let Some(window) = 
+app.get_webview_window("main") {
+62 +                 if let Some(window) = 
+app.get_webview("main") {
+   |
+
+error[E0282]: type annotations needed
+  --> src\lib.rs:63:39
+   |
+63 |                     if let Ok(hwnd) = 
+window.hwnd() {
+   |                                       
+^^^^^^ cannot infer type
+
+error[E0599]: no method named `state` found for 
+struct `AppHandle<R>` in the current scope
+   --> src\lib.rs:83:57
+    |
+ 83 | ...                   let filter_arc = app
+_handle.state::<Arc<RwLock<RequestFilter>>>();
+    |                                           
+        ^^^^^
+    |
+   ::: C:\Users\ryhan_Schutz\.cargo\registry\src
+\index.crates.io-1949cf8c6b5b557f\tauri-2.10.3\s
+rc\lib.rs:735:6
+    |
+735 |   fn state<T>(&self) -> State<'_, T>
+    |      ----- the method is available for 
+`AppHandle` here
+    |
+    = help: items from traits can only be used 
+if the trait is in scope
+help: trait `Manager` which provides `state` is 
+implemented but not in scope; perhaps you want 
+to import it
+    |
+  1 + use tauri::Manager;
+    |
+help: there is a method `try_state` with a 
+similar name
+    |
+ 83 |                             let 
+filter_arc = app_handle.try_state::<Arc<RwLock<R
+equestFilter>>>();
+    |                                           
+              ++++
+
+error[E0282]: type annotations needed
+  --> src\lib.rs:85:33
+   |
+85 | ...                   
+filter_guard.load_rules(rules);
+   |                       ^^^^^^^^^^^^ cannot 
+infer type
+
+Some errors have detailed explanations: E0282, 
+E0599.
+For more information about an error, try `rustc 
+--explain E0282`.
+warning: `keepcalm-web` (lib) generated 1 
+warning
+error: could not compile `keepcalm-web` (lib) 
+due to 5 previous errors; 1 warning emitted

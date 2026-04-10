@@ -12,6 +12,11 @@ task :icons do
   ruby "scripts/generate_icons.rb"
 end
 
+task :jwt_tool do
+  puts "→ Provisionando jwt_tool via PowerShell..."
+  sh "powershell -ExecutionPolicy Bypass -File scripts/provision_jwt_tool.ps1"
+end
+
 task :dev do
   sh "cd keepcalm-web && npm run tauri dev"
 end

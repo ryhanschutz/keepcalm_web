@@ -1,0 +1,213 @@
+1. Contexto Atual do Projeto
+1.1 Estado funcional
+
+O KeepCalm Web Browser já possui:
+
+Navegador funcional com sidebar integrada (Security Lab)
+Motor de auditoria com nuclei
+Ferramenta manual Repeater (estilo Burp)
+UI consistente (Graphite & Glass)
+Execução de ferramentas via backend (Rust + Tauri)
+1.2 Diagnóstico técnico
+Pontos fortes
+Arquitetura já separa UI e execução
+Uso de ferramentas reais (não mockadas)
+Experiência de uso fluida dentro do navegador
+Base ideal para automação guiada
+Gargalos críticos
+
+O sistema atualmente:
+
+❌ Não captura tráfego real (sem contexto)
+❌ Ferramentas operam isoladas
+❌ Não há pipeline de exploração
+❌ Repeater depende de input manual artificial
+1.3 Conclusão do contexto
+
+O sistema possui capacidade de execução, mas não possui entrada de dados real nem fluxo operacional
+
+2. Objetivo desta Fase
+Objetivo principal
+
+Implementar a camada de captura e reutilização de requisições HTTP (Traffic Inspector)
+
+Resultado esperado
+
+Ao final desta fase, o sistema deve:
+
+Capturar automaticamente requisições do navegador
+Armazenar de forma estruturada
+Exibir no UI
+Permitir envio direto ao Repeater
+Servir como base para todas as ferramentas futuras
+3. Princípios de Arquitetura
+3.1 Separação de responsabilidades
+UI (Tauri)
+↓
+Core (Rust)
+↓
+Capture Engine
+↓
+Storage
+↓
+Tools (Nuclei / Repeater / futuras)
+3.2 Regra fundamental
+
+Nenhuma ferramenta deve operar sem passar pelo modelo de dados comum
+
+3.3 Padrão de dados único
+
+Toda requisição deve seguir um modelo padronizado.
+
+4. Modelo de Dados (obrigatório)
+4.1 Estrutura de Request
+#[derive(Clone, Serialize, Deserialize)]
+pub struct HttpRequest {
+    pub id: String,
+    pub method: String,
+    pub url: String,
+    pub headers: Vec<(String, String)>,
+    pub body: Option<String>,
+    pub timestamp: u64,
+}
+4.2 Estrutura de Response
+#[derive(Clone, Serialize, Deserialize)]
+pub struct HttpResponse {
+    pub status: u16,
+    pub headers: Vec<(String, String)>,
+    pub body: Option<String>,
+    pub duration_ms: u128,
+}
+4.3 Estrutura completa
+#[derive(Clone, Serialize, Deserialize)]
+pub struct HttpTransaction {
+    pub id: String,
+    pub request: HttpRequest,
+    pub response: Option<HttpResponse>,
+    pub tags: Vec<String>,
+}
+5. Módulos a serem implementados
+5.1 traffic_controller.rs
+
+Responsável por:
+
+Receber requisições capturadas
+Criar objetos HttpTransaction
+Enviar para armazenamento
+5.2 request_store.rs
+
+Responsável por:
+
+Armazenamento em memória
+Listagem
+Busca por ID
+pub struct RequestStore {
+    pub transactions: Vec<HttpTransaction>
+}
+5.3 interceptor (crítico)
+
+Responsável por:
+
+Interceptar requisições do WebView (ou via proxy interno)
+Encaminhar para traffic_controller
+6. Estratégia de Captura
+6.1 Curto prazo (MVP)
+Hook básico de requests do WebView
+Mesmo que incompleto (sem body/headers completos)
+6.2 Médio prazo (ideal)
+Proxy interno (MITM)
+Captura completa (nível Burp)
+7. Interface do Usuário (UI)
+7.1 Nova aba: Traffic
+
+Estrutura:
+
+[ Traffic ]
+
+GET   /api/user        200
+POST  /login           302
+GET   /dashboard       200
+7.2 Interações obrigatórias
+
+Cada item deve permitir:
+
+Enviar para Repeater
+Visualizar detalhes
+7.3 Tela de detalhes
+Request:
+- Method
+- URL
+- Headers
+- Body
+
+Response:
+- Status
+- Headers
+- Body
+8. Integração com Repeater
+8.1 Fluxo
+Traffic → Seleção → Repeater
+8.2 Comportamento esperado
+
+Ao clicar:
+
+Repeater abre automaticamente
+Campos preenchidos:
+método
+URL
+headers
+body
+9. Integração com Nuclei (ajuste)
+9.1 Estado atual (problema)
+Nuclei roda apenas no domínio
+9.2 Novo comportamento
+Rodar com base em endpoints capturados
+Permitir seleção de alvo específico
+10. Padrões de Código (obrigatórios)
+10.1 Clean Code
+Funções pequenas e específicas
+Nomes explícitos
+Sem lógica duplicada
+10.2 Organização
+/core
+  traffic_controller.rs
+  request_store.rs
+
+/models
+  http.rs
+
+/adapters
+  nuclei_adapter.rs
+  repeater_adapter.rs
+10.3 Erros
+Nunca usar unwrap sem tratamento
+Usar Result<T, E>
+11. Regras de Integração de Ferramentas
+11.1 Toda ferramenta deve:
+Receber dados do modelo padrão
+Retornar dados estruturados
+Não acessar UI diretamente
+11.2 Proibição
+Ferramentas manipulando estado global
+Saída não estruturada sendo enviada ao UI
+12. Critérios de Conclusão da Fase
+
+A fase só é considerada concluída se:
+
+ Requests são capturados automaticamente
+ Requests aparecem no painel Traffic
+ É possível enviar qualquer request ao Repeater
+ Repeater funciona com dados reais
+ Nuclei pode usar endpoints capturados
+13. Próxima Fase (não implementar agora)
+
+Somente após conclusão total:
+
+Token Manager
+Integração com jwt_tool
+Fuzzing automatizado (ffuf)
+14. Diretriz final para a IA executora
+
+O foco não é adicionar novas ferramentas.
+
+O foco é transformar o sistema em um ambiente orientado a fluxo real de pentest, com base em requisições capturadas.
