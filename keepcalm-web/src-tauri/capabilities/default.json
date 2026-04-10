@@ -18,7 +18,8 @@
       "identifier": "shell:allow-execute",
       "allow": [
         { "name": "binaries/nuclei", "sidecar": true },
-        { "name": "binaries/httpx", "sidecar": true }
+        { "name": "binaries/httpx", "sidecar": true },
+        { "name": "binaries/jwt_tool", "sidecar": true }
       ]
     }
   ]

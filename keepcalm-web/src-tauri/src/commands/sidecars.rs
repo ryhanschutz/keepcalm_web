@@ -28,6 +28,14 @@ pub async fn run_security_tool(
             .env("ALL_PROXY", &proxy_url)
             .env("HTTP_PROXY", &proxy_url)
             .env("HTTPS_PROXY", &proxy_url);
+    } else {
+        // Avoid inheriting broken global proxy env from host process.
+        sidecar_command = sidecar_command
+            .env("ALL_PROXY", "")
+            .env("HTTP_PROXY", "")
+            .env("HTTPS_PROXY", "")
+            .env("GIT_HTTP_PROXY", "")
+            .env("GIT_HTTPS_PROXY", "");
     }
 
     let (mut rx, _child) = sidecar_command

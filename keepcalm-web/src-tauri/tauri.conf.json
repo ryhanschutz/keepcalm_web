@@ -38,7 +38,8 @@
     "resources": ["assets/blocklist.db"],
     "externalBin": [
       "binaries/nuclei",
-      "binaries/httpx"
+      "binaries/httpx",
+      "binaries/jwt_tool"
     ]
   }
 }

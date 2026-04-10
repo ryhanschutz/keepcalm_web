@@ -69,8 +69,10 @@ export const SecurityLab: React.FC<SecurityLabProps> = ({ isOpen, onClose }) => 
   const [selectedJwtId, setSelectedJwtId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [nucleiLogs, setNucleiLogs] = useState<string[]>([]);
+  const [jwtToolLogs, setJwtToolLogs] = useState<string[]>([]);
   const [reconResults, setReconResults] = useState<{ label: string; value: string }[]>([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [isJwtToolRunning, setIsJwtToolRunning] = useState(false);
   const [isReconRunning, setIsReconRunning] = useState(false);
   const [repeaterRaw, setRepeaterRaw] = useState('');
   const [repeaterResponse, setRepeaterResponse] = useState<string | null>(null);
@@ -88,7 +90,11 @@ export const SecurityLab: React.FC<SecurityLabProps> = ({ isOpen, onClose }) => 
     try {
       return new URL(activeTab.url).hostname;
     } catch {
-      return '';
+      try {
+        return new URL(`https://${activeTab.url}`).hostname;
+      } catch {
+        return '';
+      }
     }
   }, [activeTab]);
 
@@ -123,7 +129,12 @@ export const SecurityLab: React.FC<SecurityLabProps> = ({ isOpen, onClose }) => 
           setNucleiLogs((prev) => [...prev.slice(-100), payload.content || '']);
         } else if (payload.type === 'terminated') {
           setIsScanning(false);
-          setNucleiLogs((prev) => [...prev, '\n[FINISH] Auditoria encerrada.']);
+          setNucleiLogs((prev) => [
+            ...prev,
+            payload.code && payload.code !== 0
+              ? `\n[ERRO] Nuclei finalizou com codigo ${payload.code}.`
+              : '\n[FINISH] Auditoria encerrada.',
+          ]);
         }
         return;
       }
@@ -150,6 +161,26 @@ export const SecurityLab: React.FC<SecurityLabProps> = ({ isOpen, onClose }) => 
           }
         } else if (payload.type === 'terminated') {
           setIsReconRunning(false);
+          if (payload.code && payload.code !== 0) {
+            setReconResults((prev) => [
+              ...prev,
+              { label: 'Erro', value: `httpx finalizou com codigo ${payload.code}` },
+            ]);
+          }
+        }
+      }
+
+      if (payload.tool === 'jwt_tool') {
+        if (payload.type === 'stdout' || payload.type === 'stderr') {
+          setJwtToolLogs((prev) => [...prev.slice(-180), payload.content || '']);
+        } else if (payload.type === 'terminated') {
+          setIsJwtToolRunning(false);
+          setJwtToolLogs((prev) => [
+            ...prev,
+            payload.code && payload.code !== 0
+              ? `\n[ERRO] jwt_tool finalizou com codigo ${payload.code}.`
+              : '\n[FINISH] jwt_tool finalizado.',
+          ]);
         }
       }
     });
@@ -177,7 +208,7 @@ export const SecurityLab: React.FC<SecurityLabProps> = ({ isOpen, onClose }) => 
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [nucleiLogs]);
+  }, [activeSegment, jwtToolLogs, nucleiLogs]);
 
   useEffect(() => {
     if (
@@ -266,16 +297,38 @@ export const SecurityLab: React.FC<SecurityLabProps> = ({ isOpen, onClose }) => 
 
   const runNuclei = async () => {
     if (!domain) return;
+    const target = domain.startsWith('http://') || domain.startsWith('https://')
+      ? domain
+      : `https://${domain}`;
     setIsScanning(true);
-    setNucleiLogs([`[INFO] Iniciando Nuclei Audit em: ${domain}...`]);
+    setNucleiLogs([`[INFO] Iniciando Nuclei Audit em: ${target}...`]);
     try {
       await invoke('run_security_tool', {
         toolName: 'nuclei',
-        args: ['-u', domain, '-silent', '-nc'],
+        args: ['-u', target, '-silent', '-nc'],
       });
     } catch (error) {
       setNucleiLogs((prev) => [...prev, `[ERRO] ${error}`]);
       setIsScanning(false);
+    }
+  };
+
+  const runJwtToolAudit = async () => {
+    if (!selectedJwt || isJwtToolRunning) return;
+    setIsJwtToolRunning(true);
+    setJwtToolLogs([
+      '[INFO] Iniciando jwt_tool no modo Playbook (-M pb)...',
+      `[INFO] Origem do token: ${selectedJwt.method} ${selectedJwt.url}`,
+    ]);
+
+    try {
+      await invoke('run_security_tool', {
+        toolName: 'jwt_tool',
+        args: [selectedJwt.token, '-M', 'pb'],
+      });
+    } catch (error) {
+      setJwtToolLogs((prev) => [...prev, `[ERRO] ${error}`]);
+      setIsJwtToolRunning(false);
     }
   };
 
@@ -704,6 +757,30 @@ export const SecurityLab: React.FC<SecurityLabProps> = ({ isOpen, onClose }) => 
                   )}
                 />
               </div>
+              <div
+                style={{
+                  marginTop: '12px',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                }}
+              >
+                <button
+                  onClick={runJwtToolAudit}
+                  disabled={!selectedJwt || isJwtToolRunning}
+                  style={{
+                    ...iconButtonStyle,
+                    width: 'auto',
+                    padding: '8px 12px',
+                    gap: '6px',
+                    color: 'var(--kc-text-primary)',
+                    opacity: !selectedJwt && !isJwtToolRunning ? 0.7 : 1,
+                  }}
+                  type="button"
+                >
+                  <Play size={10} fill="currentColor" />
+                  {isJwtToolRunning ? 'Executando jwt_tool' : 'Run jwt_tool (Audit)'}
+                </button>
+              </div>
             </div>
 
             <div
@@ -923,6 +1000,49 @@ export const SecurityLab: React.FC<SecurityLabProps> = ({ isOpen, onClose }) => 
                 </div>
               </div>
             ) : null}
+
+            <div style={panelStyle}>
+              <div style={sectionLabelStyle}>jwt_tool Output</div>
+              <div
+                ref={scrollRef}
+                style={{
+                  background: '#0a0a0a',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  height: '220px',
+                  overflowY: 'auto',
+                  fontFamily: 'var(--kc-font-mono)',
+                  fontSize: '11px',
+                  border: '1px solid var(--kc-border-main)',
+                  lineHeight: 1.5,
+                }}
+              >
+                {jwtToolLogs.length === 0 ? (
+                  <div style={{ color: 'var(--kc-text-disabled)' }}>
+                    Clique em "Run jwt_tool (Audit)" para iniciar a auditoria do token selecionado.
+                  </div>
+                ) : (
+                  jwtToolLogs.map((log, index) => (
+                    <div
+                      key={`${log}-${index}`}
+                      style={{
+                        color: log.includes('[ERRO]')
+                          ? 'var(--kc-danger)'
+                          : log.includes('[INFO]')
+                            ? 'var(--kc-text-secondary)'
+                            : '#a5d6ff',
+                        borderBottom: '1px solid rgba(255,255,255,0.03)',
+                        paddingBottom: '2px',
+                        marginBottom: '4px',
+                        whiteSpace: 'pre-wrap',
+                      }}
+                    >
+                      {log}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         ) : null}
 
@@ -1296,15 +1416,18 @@ async function runHttpxRecon(
   setReconResults: React.Dispatch<React.SetStateAction<{ label: string; value: string }[]>>,
 ) {
   if (!domain) return;
+  const target =
+    domain.startsWith('http://') || domain.startsWith('https://') ? domain : `https://${domain}`;
   setIsReconRunning(true);
   setReconResults([]);
   try {
     await invoke('run_security_tool', {
       toolName: 'httpx',
-      args: ['-u', domain, '-td', '-silent', '-nc'],
+      args: ['-u', target, '-td', '-silent', '-nc'],
     });
   } catch (error) {
     console.error('Recon failed:', error);
+    setReconResults([{ label: 'Erro', value: String(error) }]);
     setIsReconRunning(false);
   }
 }
