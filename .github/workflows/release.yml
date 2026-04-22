@@ -10,20 +10,8 @@ jobs:
   publish-tauri:
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
+    runs-on: windows-latest
 
-    runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
 
@@ -34,14 +22,6 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
-
-      - name: Install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
       - name: Install frontend dependencies
         run: npm install
@@ -53,8 +33,7 @@ jobs:
         with:
           tagName: app-v__VERSION__
           releaseName: "KeepCalm Web v__VERSION__"
-          releaseBody: "Consulte os assets abaixo para baixar e instalar o KeepCalm Web."
-          releaseDraft: true
+          releaseBody: "Baixe o instalador .exe abaixo para instalar o KeepCalm Web no Windows."
+          releaseDraft: false
           prerelease: false
-          args: ${{ matrix.args }}
           projectPath: "./keepcalm-web"
